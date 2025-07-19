@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            overflow: hidden;
+            background: #111;
+        }
+        
+        .fluid-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .fluid-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.8;
+            mix-blend-mode: screen;
+            animation: float 15s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateX(var(--start-x)) translateY(0) rotate(0deg);
+                border-radius: 50%;
+            }
+            50% {
+                transform: translateX(var(--end-x)) translateY(-150vh) rotate(360deg);
+                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            }
+            100% {
+                transform: translateX(var(--start-x)) translateY(0) rotate(0deg);
+                border-radius: 50%;
+            }
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 10px 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .hover-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            z-index: 99;
+        }
+
+        .hover-area:hover ~ .controls,
+        .controls:hover {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .color-picker {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        .color-picker::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .color-picker::-moz-color-swatch {
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .reset-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .reset-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .brightness-slider {
+            width: 100px;
+            height: 10px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .brightness-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .title {
+            color: rgba(255,255,255,0.5);
+            font-family: 'Arial', sans-serif;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 14px;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .hover-area:hover ~ .controls .title,
+        .controls:hover .title,
+        .title:hover {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="fluid-container" id="fluidContainer"></div>
+    <div class="hover-area"></div>
+    
+    <div class="controls" id="controls">
+        <div class="title" id="title">Ambios</div>
+        <div class="control-group">
+            <input type="color" class="color-picker" id="colorPicker" value="#FFA500">
+        </div>
+        
+        <div class="control-group">
+            <input type="color" class="color-picker" id="bgColor2" value="#800080">
+        </div>
+        
+        <div class="control-group">
+            <input type="range" min="0" max="100" value="25" class="brightness-slider" id="bgBrightness">
+        </div>
+        
+        <button class="reset-btn" id="fullscreenBtn">Fullscreen</button>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('fluidContainer');
+            const colorPicker = document.getElementById('colorPicker');
+            const bgColor2 = document.getElementById('bgColor2');
+            const bgBrightness = document.getElementById('bgBrightness');
+            // Set default colors
+            colorPicker.value = '#FF8C00';
+            bgColor2.value = '#800080';
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            
+            let blobs = [];
+            
+            const animationSpeed = 15; // Default speed value (half of original)
+            
+            function createBlobs() {
+                // Clear existing blobs
+                container.innerHTML = '';
+                blobs = [];
+                
+                // Create 15 blobs with same color but different sizes
+                const color = colorPicker.value;
+                
+                for (let i = 0; i < 15; i++) {
+                    const blob = document.createElement('div');
+                    blob.className = 'fluid-blob';
+                    
+                    // Random size between 30px and 400px with more variation
+                    const size = Math.pow(Math.random(), 2) * 370 + 30;
+                    
+                    // Position at the bottom with some random horizontal offset
+                    const left = Math.random() * 100;
+                    
+                    // More random animation delay and duration
+                    const delay = Math.random() * 30;
+                    const duration = 60 + (Math.random() * 120); // Wider range from 60s to 180s
+                    const startX = Math.random() * 120 - 10;
+                    const endX = Math.random() * 120 - 10;
+                    
+                    blob.style.width = `${size}px`;
+                    blob.style.height = `${size}px`;
+                    blob.style.left = `${startX}%`;
+                    blob.style.bottom = `-${size}px`;
+                    blob.style.backgroundColor = color;
+                    blob.style.animationDelay = `${delay}s`;
+                    blob.style.opacity = `${0.3 + Math.random() * 0.5}`;
+                    
+                    // Custom animation properties for each blob
+                    blob.style.setProperty('--start-x', `${startX}%`);
+                    blob.style.setProperty('--end-x', `${endX}%`);
+                    blob.style.animationDuration = `${duration}s`;
+                    container.appendChild(blob);
+                    blobs.push(blob);
+                }
+            }
+            
+            // Initialize
+            createBlobs();
+            updateBackground();
+            
+            // Event listeners
+            colorPicker.addEventListener('input', createBlobs);
+            bgBrightness.addEventListener('input', updateBackground);
+            
+            function updateBackground() {
+                const brightness = bgBrightness.value / 100;
+                document.body.style.background = `
+                    linear-gradient(
+                        to bottom,
+                        #000000,
+                        ${adjustBrightness('#800080', brightness)}
+                    )
+                `;
+            }
+            
+            function adjustBrightness(color, brightness) {
+                // Convert hex to RGB
+                const r = parseInt(color.substr(1, 2), 16);
+                const g = parseInt(color.substr(3, 2), 16);
+                const b = parseInt(color.substr(5, 2), 16);
+                
+                // Adjust brightness
+                const adjustedR = Math.round(r * brightness);
+                const adjustedG = Math.round(g * brightness);
+                const adjustedB = Math.round(b * brightness);
+                
+                // Convert back to hex
+                return `#${adjustedR.toString(16).padStart(2, '0')}${adjustedG.toString(16).padStart(2, '0')}${adjustedB.toString(16).padStart(2, '0')}`;
+            }
+
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
