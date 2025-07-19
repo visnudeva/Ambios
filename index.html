@@ -24,19 +24,22 @@
             opacity: 0.9;
             mix-blend-mode: screen;
             animation: float 15s infinite ease-in-out;
-            filter: blur(20px);
+            filter: blur(40px);
             box-shadow: 0 0 60px 30px currentColor;
         }
         
         @keyframes float {
             0% {
-                transform: translateX(var(--start-x)) translateY(0);
+                transform: translateX(var(--start-x)) translateY(0) rotate(0deg);
+                border-radius: 50%;
             }
             50% {
-                transform: translateX(var(--end-x)) translateY(-150vh);
+                transform: translateX(var(--end-x)) translateY(-150vh) rotate(360deg);
+                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
             }
             100% {
-                transform: translateX(var(--start-x)) translateY(0);
+                transform: translateX(var(--start-x)) translateY(0) rotate(0deg);
+                border-radius: 50%;
             }
         }
         
@@ -187,9 +190,7 @@
             
             let blobs = [];
             
-            // Detect mobile devices
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const animationSpeed = isMobile ? 30 : 15; // Slower on mobile
+            const animationSpeed = 15; // Default speed value (half of original)
             
             function createBlobs() {
                 // Clear existing blobs
@@ -199,19 +200,19 @@
                 // Create 15 blobs with same color but different sizes
                 const color = colorPicker.value;
                 
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < 15; i++) {
                     const blob = document.createElement('div');
                     blob.className = 'fluid-blob';
                     
                     // Random size between 30px and 400px with more variation
-                    const size = Math.pow(Math.random(), 2) * 200 + 30;
+                    const size = Math.pow(Math.random(), 2) * 370 + 30;
                     
                     // Position at the bottom with some random horizontal offset
                     const left = Math.random() * 100;
                     
                     // More random animation delay and duration
                     const delay = Math.random() * 30;
-                    const duration = (isMobile ? 30 : 15) + (Math.random() * (isMobile ? 60 : 120)); // Shorter durations on mobile
+                    const duration = 60 + (Math.random() * 120); // Wider range from 60s to 180s
                     const startX = Math.random() * 120 - 10;
                     const endX = Math.random() * 120 - 10;
                     
@@ -220,7 +221,7 @@
                     blob.style.left = `${startX}%`;
                     blob.style.bottom = `-${size}px`;
                     blob.style.backgroundColor = color;
-                    blob.style.filter = `blur(${size/25}px)`;
+                    blob.style.filter = `blur(${size/10}px)`;
                     blob.style.boxShadow = `0 0 ${size/2}px ${size/4}px ${color}`;
                     blob.style.animationDelay = `${delay}s`;
                     blob.style.opacity = `${0.7 + Math.random() * 0.3}`;
