@@ -65,24 +65,13 @@
             flex-wrap: wrap;
             justify-content: center;
             max-width: 90%;
-            opacity: 1; /* Controls are initially visible */
-            pointer-events: all;
+            opacity: 0; /* Initially hidden */
+            pointer-events: none; /* Initially not interactive */
             transition: opacity 0.3s ease; /* Smooth transition for showing/hiding */
         }
 
-        /* Hover area to keep controls visible when mouse is near the bottom */
-        .hover-area {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100px; /* Area at the bottom of the screen */
-            z-index: 99;
-        }
-
-        /* Keep controls visible on hover over the hover-area or the controls themselves */
-        .hover-area:hover ~ .controls,
-        .controls:hover {
+        /* Class to make controls visible */
+        .controls.is-visible {
             opacity: 1;
             pointer-events: all;
         }
@@ -183,17 +172,15 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Title opacity on hover */
-        .hover-area:hover ~ .controls .title,
-        .controls:hover .title,
+        /* Title opacity on hover (no longer directly tied to hover-area) */
+        .controls.is-visible .title,
         .title:hover {
-            opacity: 0.7; /* Slightly more visible on hover */
+            opacity: 0.7; /* Slightly more visible when controls are active or title is hovered */
         }
     </style>
 </head>
 <body>
     <div class="fluid-container" id="fluidContainer"></div>
-    <div class="hover-area"></div> <!-- Invisible area to trigger controls on hover -->
     <div class="controls" id="controls">
         <div class="title" id="title">Ambios</div>
         <div class="control-group">
@@ -218,12 +205,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             // DOM element references
             const container = document.getElementById('fluidContainer');
+            const controls = document.getElementById('controls'); // Get reference to the controls div
             const colorPicker = document.getElementById('colorPicker');
             const bgColor2 = document.getElementById('bgColor2');
             const bgBrightness = document.getElementById('bgBrightness');
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             
-            // Array to hold references to created blob elements
+            // Array to hold references to created blob elements (not strictly used for this app's logic)
             let blobs = [];
             
             // --- Utility Functions ---
@@ -310,7 +298,7 @@
                     blob.style.animationDuration = `${duration}s`;
                     
                     container.appendChild(blob);
-                    blobs.push(blob); // Store reference (though not strictly needed for this app)
+                    blobs.push(blob);
                 }
             }
             
@@ -344,6 +332,13 @@
             }
 
             /**
+             * Toggles the visibility of the control panel by adding/removing 'is-visible' class.
+             */
+            function toggleControlsVisibility() {
+                controls.classList.toggle('is-visible');
+            }
+
+            /**
              * Initializes the application by setting up initial states and event listeners.
              */
             function initApp() {
@@ -356,9 +351,7 @@
                 updateBackground();
 
                 // Set up debounced event listeners for performance
-                // Debounce createBlobs as it involves DOM manipulation
                 const debouncedCreateBlobs = debounce(createBlobs, 200); 
-                // Debounce updateBackground as it's a continuous slider
                 const debouncedUpdateBackground = debounce(updateBackground, 100);
 
                 colorPicker.addEventListener('input', debouncedCreateBlobs);
@@ -366,6 +359,9 @@
                 bgBrightness.addEventListener('input', debouncedUpdateBackground);
                 
                 fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+                // Add click listener to the container to toggle controls visibility
+                container.addEventListener('click', toggleControlsVisibility);
             }
 
             // Initialize the application when the DOM is ready
