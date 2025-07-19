@@ -27,6 +27,13 @@
             filter: blur(40px);
             box-shadow: 0 0 60px 30px currentColor;
         }
+
+        @media (max-width: 768px) {
+            .fluid-blob {
+                filter: blur(20px);
+                box-shadow: 0 0 30px 15px currentColor;
+            }
+        }
         
         @keyframes float {
             0% {
@@ -160,7 +167,7 @@
 </head>
 <body>
     <div class="fluid-container" id="fluidContainer"></div>
-    <div class="controls" id="controls" style="display: none;">
+    <div class="controls" id="controls">
         <div class="title" id="title">Ambios</div>
         <div class="control-group">
             <input type="color" class="color-picker" id="colorPicker" value="#FFA500">
@@ -184,7 +191,7 @@
             const bgColor2 = document.getElementById('bgColor2');
             const bgBrightness = document.getElementById('bgBrightness');
             // Set default colors
-            colorPicker.value = '#FF4500';
+            colorPicker.value = '#FF8C00';
             bgColor2.value = '#800080';
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             
