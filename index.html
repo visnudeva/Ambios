@@ -160,7 +160,7 @@
 </head>
 <body>
     <div class="fluid-container" id="fluidContainer"></div>
-    <div class="controls" id="controls" style="opacity: 0; pointer-events: none;">
+    <div class="controls" id="controls" style="display: none;">
         <div class="title" id="title">Ambios</div>
         <div class="control-group">
             <input type="color" class="color-picker" id="colorPicker" value="#FFA500">
@@ -239,23 +239,17 @@
             createBlobs();
             updateBackground();
             
-            let hideTimeout;
-            
-            function showControls() {
+            function toggleControls() {
                 const controls = document.getElementById('controls');
-                controls.style.opacity = '1';
-                controls.style.pointerEvents = 'all';
-                
-                // Reset hide timeout
-                clearTimeout(hideTimeout);
-                hideTimeout = setTimeout(() => {
-                    controls.style.opacity = '0';
-                    controls.style.pointerEvents = 'none';
-                }, 15000);
+                if (controls.style.display === 'none') {
+                    controls.style.display = 'flex';
+                } else {
+                    controls.style.display = 'none';
+                }
             }
             
-            // Show controls when clicking anywhere
-            document.addEventListener('click', showControls);
+            // Toggle controls when clicking anywhere
+            document.addEventListener('click', toggleControls);
             
             // Event listeners
             colorPicker.addEventListener('input', createBlobs);
