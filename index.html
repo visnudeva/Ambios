@@ -21,10 +21,11 @@
         .fluid-blob {
             position: absolute;
             border-radius: 50%;
-            filter: blur(40px);
-            opacity: 0.8;
+            opacity: 0.9;
             mix-blend-mode: screen;
             animation: float 15s infinite ease-in-out;
+            filter: blur(40px);
+            box-shadow: 0 0 60px 30px currentColor;
         }
         
         @keyframes float {
@@ -49,7 +50,8 @@
             transform: translateX(-50%);
             z-index: 100;
             background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
             border-radius: 20px;
             padding: 10px 20px;
             display: flex;
@@ -57,8 +59,8 @@
             flex-wrap: wrap;
             justify-content: center;
             max-width: 90%;
-            opacity: 0;
-            pointer-events: none;
+            opacity: 1;
+            pointer-events: all;
             transition: opacity 0.3s ease;
         }
 
@@ -158,9 +160,7 @@
 </head>
 <body>
     <div class="fluid-container" id="fluidContainer"></div>
-    <div class="hover-area"></div>
-    
-    <div class="controls" id="controls">
+    <div class="controls" id="controls" style="opacity: 0; pointer-events: none;">
         <div class="title" id="title">Ambios</div>
         <div class="control-group">
             <input type="color" class="color-picker" id="colorPicker" value="#FFA500">
@@ -184,7 +184,7 @@
             const bgColor2 = document.getElementById('bgColor2');
             const bgBrightness = document.getElementById('bgBrightness');
             // Set default colors
-            colorPicker.value = '#FF8C00';
+            colorPicker.value = '#FFA500';
             bgColor2.value = '#800080';
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             
@@ -221,8 +221,10 @@
                     blob.style.left = `${startX}%`;
                     blob.style.bottom = `-${size}px`;
                     blob.style.backgroundColor = color;
+                    blob.style.filter = `blur(${size/10}px)`;
+                    blob.style.boxShadow = `0 0 ${size/2}px ${size/4}px ${color}`;
                     blob.style.animationDelay = `${delay}s`;
-                    blob.style.opacity = `${0.3 + Math.random() * 0.5}`;
+                    blob.style.opacity = `${0.7 + Math.random() * 0.3}`;
                     
                     // Custom animation properties for each blob
                     blob.style.setProperty('--start-x', `${startX}%`);
@@ -236,6 +238,24 @@
             // Initialize
             createBlobs();
             updateBackground();
+            
+            let hideTimeout;
+            
+            function showControls() {
+                const controls = document.getElementById('controls');
+                controls.style.opacity = '1';
+                controls.style.pointerEvents = 'all';
+                
+                // Reset hide timeout
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(() => {
+                    controls.style.opacity = '0';
+                    controls.style.pointerEvents = 'none';
+                }, 15000);
+            }
+            
+            // Show controls when clicking anywhere
+            document.addEventListener('click', showControls);
             
             // Event listeners
             colorPicker.addEventListener('input', createBlobs);
