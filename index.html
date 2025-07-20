@@ -420,7 +420,12 @@
                 colorPicker.addEventListener('input', startAutoHideTimer);
                 bgColor2.addEventListener('input', startAutoHideTimer);
                 bgBrightness.addEventListener('input', startAutoHideTimer);
+                
+                // Corrected: Fullscreen button now calls toggleFullscreen
+                fullscreenBtn.addEventListener('click', toggleFullscreen); 
+                // Also reset auto-hide timer when fullscreen button is clicked
                 fullscreenBtn.addEventListener('click', startAutoHideTimer);
+
 
                 // Add mousemove listener to controls to reset timer
                 controls.addEventListener('mousemove', startAutoHideTimer);
