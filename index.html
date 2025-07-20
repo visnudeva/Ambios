@@ -13,6 +13,11 @@
             font-family: 'Inter', sans-serif; /* Using Inter font as per guidelines */
         }
         
+        /* New: Hide cursor when body has this class */
+        body.hide-cursor {
+            cursor: none;
+        }
+
         /* Container for the fluid blobs, occupying full viewport */
         .fluid-container {
             position: relative;
@@ -233,6 +238,7 @@
             let currentBlobCount; // Will be set based on screen size
             let currentBlurFactor; // Will be set based on screen size
             let autoHideTimer; // Timer for auto-hiding the menu
+            let cursorHideTimer; // New: Timer for auto-hiding the cursor
 
             // --- Utility Functions ---
 
@@ -381,6 +387,25 @@
             }
 
             /**
+             * Starts a timer to hide the mouse cursor after inactivity.
+             */
+            function startCursorHideTimer() {
+                clearTimeout(cursorHideTimer);
+                cursorHideTimer = setTimeout(() => {
+                    document.body.classList.add('hide-cursor');
+                }, 5000); // Hide cursor after 5 seconds of inactivity
+            }
+
+            /**
+             * Shows the mouse cursor and restarts the hide timer.
+             */
+            function showCursor() {
+                document.body.classList.remove('hide-cursor');
+                startCursorHideTimer();
+            }
+
+
+            /**
              * Checks screen size and applies performance mode settings if on a mobile device.
              * Then recreates blobs with the new settings.
              */
@@ -416,14 +441,25 @@
                 controls.classList.add('is-visible');
                 startAutoHideTimer();
 
+                // Start cursor hide timer
+                startCursorHideTimer();
+
                 // Event listeners for controls
-                colorPicker.addEventListener('input', startAutoHideTimer);
-                bgColor2.addEventListener('input', startAutoHideTimer);
-                bgBrightness.addEventListener('input', startAutoHideTimer);
+                colorPicker.addEventListener('input', () => {
+                    debouncedCreateBlobs();
+                    startAutoHideTimer();
+                });
+                bgColor2.addEventListener('input', () => {
+                    debouncedUpdateBackground();
+                    startAutoHideTimer();
+                });
+                bgBrightness.addEventListener('input', () => {
+                    debouncedUpdateBackground();
+                    startAutoHideTimer();
+                });
                 
-                // Corrected: Fullscreen button now calls toggleFullscreen
+                // Fullscreen button now calls toggleFullscreen and resets auto-hide timer
                 fullscreenBtn.addEventListener('click', toggleFullscreen); 
-                // Also reset auto-hide timer when fullscreen button is clicked
                 fullscreenBtn.addEventListener('click', startAutoHideTimer);
 
 
@@ -432,6 +468,9 @@
                 
                 // Add click listener to the container to toggle controls visibility
                 container.addEventListener('click', toggleControlsVisibility);
+
+                // New: Add mousemove listener to the container to show cursor and reset its timer
+                container.addEventListener('mousemove', showCursor);
 
                 // Listen for screen size changes to dynamically adjust performance mode
                 const mediaQueryList = window.matchMedia('(max-width: 768px)');
