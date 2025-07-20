@@ -2,7 +2,7 @@
   <img src="https://github.com/visnudeva/Ambios/blob/main/Ambios.png?raw=true" width="200">
 </p>
 
-# [Ambios, a peaceful lava lamp visualizer for the web](https://visnudeva.github.io/ambios/)
+# [Ambios, a peaceful lava lamp visualizer for the web](https://visnudeva.github.io/Ambios/)
 
 **V1 PC view**
 <p align="center">
