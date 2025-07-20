@@ -19,6 +19,7 @@
             width: 100%;
             height: 100vh;
             overflow: hidden;
+            z-index: 1; /* Ensure it's above the body background but below controls */
         }
         
         /* Styling for individual fluid blobs */
@@ -30,20 +31,30 @@
             animation: float 15s infinite ease-in-out; /* Default animation */
             filter: blur(40px); /* Blurs the blobs for a soft, ethereal look */
             box-shadow: 0 0 60px 30px currentColor; /* Glow effect */
+            will-change: transform, opacity; /* Hint to the browser for performance optimization */
+            z-index: 2; /* Ensure blobs are above the blurred container */
         }
         
         /* Keyframe animation for the floating blobs */
         @keyframes float {
             0% {
+                /* Start further down and invisible */
+                transform: translateX(var(--start-x)) translateY(var(--initial-offset-y)) rotate(0deg);
+                opacity: 0;
+                border-radius: 50%;
+            }
+            2% { /* Quickly transition to its actual starting point and full opacity */
                 transform: translateX(var(--start-x)) translateY(0) rotate(0deg);
+                opacity: var(--target-opacity);
                 border-radius: 50%;
             }
             50% {
                 transform: translateX(var(--end-x)) translateY(-150vh) rotate(360deg);
-                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; /* Changes shape mid-animation */
+                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
             }
             100% {
                 transform: translateX(var(--start-x)) translateY(0) rotate(0deg);
+                opacity: var(--target-opacity); /* Ensure it ends visible */
                 border-radius: 50%;
             }
         }
@@ -131,8 +142,8 @@
             transform: translateY(-2px);
         }
         
-        /* Styling for brightness slider */
-        .brightness-slider {
+        /* Styling for sliders */
+        .range-slider {
             width: 100px;
             height: 10px;
             -webkit-appearance: none;
@@ -142,7 +153,7 @@
             transition: background 0.3s ease;
         }
         
-        .brightness-slider::-webkit-slider-thumb {
+        .range-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 20px;
             height: 20px;
@@ -153,7 +164,7 @@
             transition: background 0.3s ease, transform 0.2s ease;
         }
         
-        .brightness-slider::-webkit-slider-thumb:hover {
+        .range-slider::-webkit-slider-thumb:hover {
             background: #e0e0e0;
             transform: scale(1.1);
         }
@@ -172,7 +183,7 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Title opacity on hover (no longer directly tied to hover-area) */
+        /* Title opacity when controls are visible or title is hovered */
         .controls.is-visible .title,
         .title:hover {
             opacity: 0.7; /* Slightly more visible when controls are active or title is hovered */
@@ -181,6 +192,7 @@
 </head>
 <body>
     <div class="fluid-container" id="fluidContainer"></div>
+
     <div class="controls" id="controls">
         <div class="title" id="title">Ambios</div>
         <div class="control-group">
@@ -195,7 +207,7 @@
         
         <div class="control-group">
             <label for="bgBrightness" class="text-white text-sm mr-2">Brightness:</label>
-            <input type="range" min="0" max="100" value="25" class="brightness-slider" id="bgBrightness">
+            <input type="range" min="0" max="100" value="25" class="range-slider" id="bgBrightness">
         </div>
         
         <button class="action-btn" id="fullscreenBtn">Fullscreen</button>
@@ -205,15 +217,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             // DOM element references
             const container = document.getElementById('fluidContainer');
-            const controls = document.getElementById('controls'); // Get reference to the controls div
+            const controls = document.getElementById('controls');
             const colorPicker = document.getElementById('colorPicker');
             const bgColor2 = document.getElementById('bgColor2');
             const bgBrightness = document.getElementById('bgBrightness');
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             
-            // Array to hold references to created blob elements (not strictly used for this app's logic)
-            let blobs = [];
+            // Constants for blob properties and performance modes
+            const DEFAULT_BLOB_COUNT = 15;
+            const PERFORMANCE_BLOB_COUNT = 5;
+            const DEFAULT_BLUR_FACTOR = 1; // Multiplier for blur intensity
+            const PERFORMANCE_BLUR_FACTOR = 0.3; // Reduced blur for performance mode
             
+            // State variables
+            let currentBlobCount; // Will be set based on screen size
+            let currentBlurFactor; // Will be set based on screen size
+            let autoHideTimer; // Timer for auto-hiding the menu
+
             // --- Utility Functions ---
 
             /**
@@ -256,18 +276,17 @@
             // --- Core Functionality ---
 
             /**
-             * Creates and appends fluid blobs to the container.
+             * Creates and appends fluid blobs to the container based on current settings.
              * Clears existing blobs before creating new ones.
              */
             function createBlobs() {
                 // Clear existing blobs to prevent accumulation
                 container.innerHTML = '';
-                blobs = [];
                 
                 const blobColor = colorPicker.value; // Get the chosen blob color
                 
-                // Create 15 blobs with varying properties
-                for (let i = 0; i < 15; i++) {
+                // Create blobs based on currentBlobCount
+                for (let i = 0; i < currentBlobCount; i++) {
                     const blob = document.createElement('div');
                     blob.className = 'fluid-blob';
                     
@@ -287,10 +306,14 @@
                     blob.style.left = `${startX}%`;
                     blob.style.bottom = `-${size}px`; // Start off-screen at the bottom
                     blob.style.backgroundColor = blobColor;
-                    blob.style.filter = `blur(${size/10}px)`; // Larger blobs are blurrier
+                    // Apply blur based on blob size and currentBlurFactor
+                    blob.style.filter = `blur(${size/10 * currentBlurFactor}px)`; 
                     blob.style.boxShadow = `0 0 ${size/2}px ${size/4}px ${blobColor}`;
                     blob.style.animationDelay = `${delay}s`;
-                    blob.style.opacity = `${0.7 + Math.random() * 0.3}`; // Varying opacity
+                    
+                    // Set CSS custom properties for animation for smooth appearance
+                    blob.style.setProperty('--initial-offset-y', '50px'); // Start 50px below its base position
+                    blob.style.setProperty('--target-opacity', `${0.7 + Math.random() * 0.3}`); // Target opacity for the blob
                     
                     // Set CSS custom properties for animation
                     blob.style.setProperty('--start-x', `${startX}%`);
@@ -298,7 +321,6 @@
                     blob.style.animationDuration = `${duration}s`;
                     
                     container.appendChild(blob);
-                    blobs.push(blob);
                 }
             }
             
@@ -332,36 +354,84 @@
             }
 
             /**
+             * Starts a timer to automatically hide the controls after 5 seconds.
+             * Clears any existing timer first.
+             */
+            function startAutoHideTimer() {
+                clearTimeout(autoHideTimer); // Clear any previous timer
+                autoHideTimer = setTimeout(() => {
+                    controls.classList.remove('is-visible'); // Hide controls
+                }, 5000); // 5 seconds
+            }
+
+            /**
              * Toggles the visibility of the control panel by adding/removing 'is-visible' class.
+             * Manages the auto-hide timer based on manual interaction.
              */
             function toggleControlsVisibility() {
-                controls.classList.toggle('is-visible');
+                if (controls.classList.contains('is-visible')) {
+                    // If controls are visible and user clicks, hide them and clear timer
+                    controls.classList.remove('is-visible');
+                    clearTimeout(autoHideTimer); // Stop auto-hide if manually hidden
+                } else {
+                    // If controls are hidden and user clicks, show them and start auto-hide timer
+                    controls.classList.add('is-visible');
+                    startAutoHideTimer();
+                }
             }
+
+            /**
+             * Checks screen size and applies performance mode settings if on a mobile device.
+             * Then recreates blobs with the new settings.
+             */
+            function checkAndApplyPerformanceMode() {
+                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                if (isMobile) {
+                    currentBlobCount = PERFORMANCE_BLOB_COUNT;
+                    currentBlurFactor = PERFORMANCE_BLUR_FACTOR;
+                } else {
+                    currentBlobCount = DEFAULT_BLOB_COUNT;
+                    currentBlurFactor = DEFAULT_BLUR_FACTOR;
+                }
+                debouncedCreateBlobs(); // Recreate blobs with the updated count and blur factor
+            }
+
+            // Set up debounced event listeners for performance
+            const debouncedCreateBlobs = debounce(createBlobs, 200); 
+            const debouncedUpdateBackground = debounce(updateBackground, 100);
 
             /**
              * Initializes the application by setting up initial states and event listeners.
              */
             function initApp() {
-                // Set default colors for the color pickers
+                // Set default colors
                 colorPicker.value = '#FF8C00'; // Orange
                 bgColor2.value = '#800080'; // Purple
-
-                // Initial creation of blobs and background update
-                createBlobs();
+                
+                // Apply performance mode based on initial screen size
+                checkAndApplyPerformanceMode();
                 updateBackground();
 
-                // Set up debounced event listeners for performance
-                const debouncedCreateBlobs = debounce(createBlobs, 200); 
-                const debouncedUpdateBackground = debounce(updateBackground, 100);
+                // Show controls at start and set auto-hide timer
+                controls.classList.add('is-visible');
+                startAutoHideTimer();
 
-                colorPicker.addEventListener('input', debouncedCreateBlobs);
-                bgColor2.addEventListener('input', debouncedUpdateBackground);
-                bgBrightness.addEventListener('input', debouncedUpdateBackground);
+                // Event listeners for controls
+                colorPicker.addEventListener('input', startAutoHideTimer);
+                bgColor2.addEventListener('input', startAutoHideTimer);
+                bgBrightness.addEventListener('input', startAutoHideTimer);
+                fullscreenBtn.addEventListener('click', startAutoHideTimer);
+
+                // Add mousemove listener to controls to reset timer
+                controls.addEventListener('mousemove', startAutoHideTimer);
                 
-                fullscreenBtn.addEventListener('click', toggleFullscreen);
-
                 // Add click listener to the container to toggle controls visibility
                 container.addEventListener('click', toggleControlsVisibility);
+
+                // Listen for screen size changes to dynamically adjust performance mode
+                const mediaQueryList = window.matchMedia('(max-width: 768px)');
+                mediaQueryList.addListener(checkAndApplyPerformanceMode); // Deprecated but for broader compatibility
+                mediaQueryList.addEventListener('change', checkAndApplyPerformanceMode); // Modern way
             }
 
             // Initialize the application when the DOM is ready
