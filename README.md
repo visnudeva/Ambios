@@ -1,14 +1,5 @@
-# Run and deploy your AI Studio app
+# Ambios
 
-This contains everything you need to run your app locally.
-
-## Run Locally
-
-**Prerequisites:**  Node.js
+## An internet radio streaming application. Features a visualizer with dynamic colors that match the radio station's icon.
 
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
