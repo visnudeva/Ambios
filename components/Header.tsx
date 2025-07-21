@@ -7,7 +7,7 @@ const Header: React.FC = () => {
         className="text-5xl md:text-6xl font-bold tracking-widest uppercase transition-all duration-500"
         style={{ color: 'var(--color-primary)' }}
       >
-        Neon Radio
+        Ambios
       </h1>
       <p 
         className="text-md md:text-lg mt-2 tracking-wider transition-colors duration-500"
