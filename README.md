@@ -1,15 +1,14 @@
-<p align="center">
-  <img src="https://github.com/visnudeva/Ambios/blob/main/Ambios.png?raw=true" width="200">
-</p>
+# Run and deploy your AI Studio app
 
-# [Ambios, a peaceful lava lamp visualizer for the web](https://visnudeva.github.io/Ambios/)
+This contains everything you need to run your app locally.
 
-**V1 PC view**
-<p align="center">
-  <img src="https://github.com/visnudeva/Ambios/blob/main/ScreenshotPC.png?raw=true" width="1000">
-</p>
+## Run Locally
 
-**V1 Smartphone view**
-<p align="center">
-  <img src="https://github.com/visnudeva/Ambios/blob/main/ScreenshotSP.png?raw=true" width="500">
-</p>
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
