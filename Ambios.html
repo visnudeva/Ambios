@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Lava Radio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    :root{
+      --clr-bg:#111;
+      --clr-accent:#20e3b2;
+      --clr-text:#fff;
+      --beat-scale:1;
+      --hue:0;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,Arial}
+    html,body{height:100%;overflow:hidden;background:var(--clr-bg);color:var(--clr-text)}
+
+    /* ---------- GLIDING BLOBS ---------- */
+    #blobs{position:fixed;inset:0;filter:url(#plasma);z-index:0}
+    .blob{
+      position:absolute;
+      border-radius:50%;
+      background:hsl(var(--hue) 100% 60%);
+      transform:scale(var(--beat-scale));
+      transition:transform .05s linear, background .3s linear;
+    }
+    .blob:nth-child(1){width:60vmin;height:60vmin;animation:glide1 120s linear infinite}
+    .blob:nth-child(2){width:40vmin;height:40vmin;animation:glide2 100s linear infinite}
+    .blob:nth-child(3){width:20vmin;height:20vmin;animation:glide3 90s linear infinite}
+    @keyframes glide1{
+      0%{left:-60%;top:10%}
+      50%{left:110%;top:90%}
+      100%{left:-60%;top:10%}
+    }
+    @keyframes glide2{
+      0%{left:110%;top:-40%}
+      50%{left:-40%;top:110%}
+      100%{left:110%;top:-40%}
+    }
+    @keyframes glide3{
+      0%{left:10%;top:110%}
+      50%{left:90%;top:-20%}
+      100%{left:10%;top:110%}
+    }
+
+    /* ---------- GLASS / RESPONSIVE ---------- */
+    .glass{
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:1rem;
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      padding:.75rem 1rem;
+    }
+    main{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:2rem;height:100%;gap:1rem}
+    #searchWrap{transition:opacity .4s ease;opacity:0;width:clamp(240px,95vw,1000px);max-width:100%}
+
+    /* now playing bar (full width) */
+    #nowBar{
+      width:100%;
+      margin-bottom:.75rem; /* space under now-bar */
+    }
+
+    /* search bar with space underneath */
+    #search{
+      width:100%;
+      margin-bottom:.75rem; /* space under search */
+      color:var(--clr-text);
+      outline:none;
+    }
+
+    /* dual pane layout */
+    #panes{
+      display:flex;
+      width:100%;
+      gap:1rem;
+    }
+    #results,
+    #recent{
+      flex:1 1 0;
+      display:flex;
+      flex-direction:column;
+      min-height:calc(2.5rem * 10 + 2rem); /* 10 rows */
+    }
+    #results ul,
+    #recent ul{
+      list-style:none;
+      margin:0;
+      padding:0;
+      width:100%;
+      overflow-y:auto;
+    }
+    #results li,
+    #recent li{
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+      padding:.5rem .75rem;
+      border-radius:.5rem;
+      cursor:pointer;
+      min-height:2.5rem;
+    }
+    #results li:hover,
+    #recent li:hover{background:rgba(255,255,255,0.08)}
+    #results li img,
+    #recent li img{width:32px;height:32px;border-radius:4px;object-fit:cover}
+
+    /* smartphone stack */
+    @media (max-width:600px){
+      #panes{flex-direction:column}
+    }
+
+    /* ---------- PLAY BAR ---------- */
+    #playBar{
+      position:fixed;
+      bottom:1.5rem;
+      left:50%;
+      translate:-50% 0;
+      z-index:10;
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+    }
+    #toggleBtn{
+      width:3rem;
+      height:3rem;
+      border:none;
+      border-radius:50%;
+      background:var(--clr-accent);
+      color:#111;
+      font-size:1.5rem;
+      cursor:pointer;
+    }
+    #utilBar{
+      position:fixed;
+      top:1rem;
+      right:1rem;
+      z-index:15;
+    }
+    #utilBar button{
+      width:2.5rem;
+      height:2.5rem;
+      border:none;
+      border-radius:50%;
+      background:rgba(255,255,255,.15);
+      color:var(--clr-text);
+      font-size:1.2rem;
+      cursor:pointer;
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG goo -->
+  <svg width="0" height="0">
+    <filter id="plasma">
+      <feGaussianBlur stdDeviation="18"/>
+      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
+    </svg>
+
+  <!-- drifting blobs -->
+  <div id="blobs">
+    <div class="blob"></div>
+    <div class="blob"></div>
+    <div class="blob"></div>
+  </div>
+
+  <!-- utility button -->
+  <div id="utilBar"><button id="fsBtn" title="Full screen">⛶</button></div>
+
+  <!-- UI -->
+  <main>
+    <div id="searchWrap">
+      <!-- Now-Playing bar (top) -->
+      <div id="nowBar" class="glass">
+        <button id="toggleBtn" title="Play / Pause">▶</button>
+        <span id="now">Choose a station</span>
+      </div>
+
+      <!-- search bar with space underneath -->
+      <input id="search" class="glass" type="search" placeholder="Type a station name…" autocomplete="off"/>
+
+      <!-- dual-pane layout -->
+      <div id="panes">
+        <!-- Search results (left) -->
+        <div id="results" class="glass">
+          <ul></ul>
+        </div>
+
+        <!-- Recent list (right) -->
+        <div id="recent" class="glass">
+          <ul>
+            <li style="pointer-events:none;font-weight:600;color:var(--clr-accent);min-height:2.5rem;">Recent</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <audio id="player" crossorigin></audio>
+  </main>
+
+  <script type="module">
+    /* 1.  radio-browser helper */
+    const API = 'https://de1.api.radio-browser.info/json/stations/search';
+    async function searchStations(term, limit = 20){
+      const res = await fetch(`${API}?name=${encodeURIComponent(term)}&limit=${limit}&hidebroken=true`,
+                              {headers:{'User-Agent':'LavaRadio/1.0'}});
+      return res.json();
+    }
+
+    /* 2.  nodes */
+    const searchInp = document.getElementById('search');
+    const resultsUl = document.querySelector('#results ul');
+    const recentUl  = document.querySelector('#recent ul');
+    const player    = document.getElementById('player');
+    const nowText   = document.getElementById('now');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const searchWrap = document.getElementById('searchWrap');
+    const fsBtn = document.getElementById('fsBtn');
+
+    /* 3.  recent list (localStorage) */
+    const MAX_RECENT = 10;
+    let recent = JSON.parse(localStorage.getItem('lava-recent') || '[]');
+
+    function saveRecent(station){
+      recent = recent.filter(s => s.url !== station.url);
+      recent.unshift(station);
+      recent = recent.slice(0, MAX_RECENT);
+      localStorage.setItem('lava-recent', JSON.stringify(recent));
+      renderRecent();
+    }
+
+    function renderRecent(){
+      while(recentUl.children.length > 1) recentUl.removeChild(recentUl.lastChild);
+      recent.forEach(st => {
+        const li=document.createElement('li');
+        li.innerHTML=`
+          <img loading="lazy" src="${st.favicon||''}" alt="" onerror="this.style.display='none';"/>
+          <span>${st.name}</span>
+        `;
+        li.onclick = ()=> select(st);
+        recentUl.appendChild(li);
+      });
+    }
+
+    /* 4.  show / hide search */
+    let hideTimer;
+    function showSearch(){
+      searchWrap.style.opacity = 1;
+      clearTimeout(hideTimer);
+    }
+    function scheduleHide(){
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(()=> searchWrap.style.opacity = 0, 15000);
+    }
+    document.addEventListener('mousemove', showSearch);
+    document.addEventListener('click', (e)=>{
+      if(e.target.closest('#searchWrap') || e.target.closest('#utilBar')) return;
+      searchWrap.style.opacity = searchWrap.style.opacity==='0' ? 1 : 0;
+      if(searchWrap.style.opacity==='1') scheduleHide();
+    });
+
+    /* 5.  live search */
+    let searchDebounce;
+    searchInp.addEventListener('input', ()=>{
+      clearTimeout(searchDebounce);
+      scheduleHide();
+      searchDebounce = setTimeout(async ()=>{
+        const term = searchInp.value.trim();
+        if(term.length<2){ render([]); return; }
+        const stations = await searchStations(term);
+        render(stations);
+      }, 300);
+    });
+
+    function render(list){
+      resultsUl.innerHTML='';
+      for (let i = 0; i < 10; i++) {
+        const li=document.createElement('li');
+        li.style.minHeight='2.5rem';
+        if (list[i]) {
+          li.innerHTML=`
+            <img loading="lazy" src="${list[i].favicon||''}" alt="" onerror="this.style.display='none';"/>
+            <span>${list[i].name}</span>
+          `;
+          li.onclick = ()=> { select(list[i]); scheduleHide(); };
+        }
+        resultsUl.appendChild(li);
+      }
+    }
+
+    /* 6.  station selection & play/pause */
+    async function select(st){
+      const stream = st.url_resolved || st.url;
+      player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
+      player.play()
+        .then(()=> {
+          nowText.textContent = `Now playing: ${st.name}`;
+          saveRecent(st);
+        })
+        .catch(e=> nowText.textContent = 'Playback error: ' + e.message);
+    }
+
+    toggleBtn.addEventListener('click', ()=>{
+      if(player.paused){
+        player.play();
+        toggleBtn.textContent = '⏸';
+      }else{
+        player.pause();
+        toggleBtn.textContent = '▶';
+      }
+    });
+    player.addEventListener('pause', () => toggleBtn.textContent='▶');
+    player.addEventListener('play',  () => toggleBtn.textContent='⏸');
+
+    /* 7.  beat-sync lava */
+    const audioCtx = new (window.AudioContext||webkitAudioContext)();
+    let analyser, dataArray;
+    player.addEventListener('play', ()=>{
+      if(analyser) return;
+      const src = audioCtx.createMediaElementSource(player);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      beatLoop();
+    });
+    function beatLoop(){
+      analyser.getByteFrequencyData(dataArray);
+      const volume = dataArray.reduce((a,b)=>a+b)/dataArray.length;
+      const scale  = 1 + volume/256;
+      document.documentElement.style.setProperty('--beat-scale', scale.toFixed(3));
+      requestAnimationFrame(beatLoop);
+    }
+
+    /* 8.  color cycle */
+    let hue=0;
+    setInterval(()=>{
+      hue = (hue + 0.5) % 360;
+      document.documentElement.style.setProperty('--hue', hue);
+    }, 50);
+
+    /* 9.  full-screen toggle */
+    fsBtn.addEventListener('click', ()=>{
+      if(!document.fullscreenElement){
+        document.documentElement.requestFullscreen();
+      }else{
+        document.exitFullscreen();
+      }
+    });
+
+    /* init */
+    renderRecent();
+    render([]);
+  </script>
+</body>
+</html>
