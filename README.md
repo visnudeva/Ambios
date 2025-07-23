@@ -1,5 +1,5 @@
 # Ambios
 
-## An internet radio streaming application. Features a visualizer with dynamic colors that match the radio station's icon.
+## An internet radio streaming application. Features a gliding blobs visualizer with dynamic colors which pulses with the music beats.
 
 
