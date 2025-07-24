@@ -53,18 +53,35 @@
       padding:.75rem 1rem;
     }
     main{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:2rem;height:100%;gap:1rem}
-    #searchWrap{transition:opacity .4s ease;opacity:0;width:clamp(240px,95vw,1000px);max-width:100%}
 
     /* now playing bar (full width) */
     #nowBar{
-      width:100%;
-      margin-bottom:.75rem; /* space under now-bar */
+      width:clamp(240px,95vw,1000px);
+      max-width:100%;
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+    }
+    #nowBar > span{flex:1;font-weight:600}
+    /* flat circle buttons */
+    .btn{
+      width:2.5rem;
+      height:2.5rem;
+      border:none;
+      border-radius:50%;
+      background:var(--clr-accent);
+      color:#111;
+      font-size:1.2rem;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
 
-    /* search bar with space underneath */
+    /* search bar full width + space below */
     #search{
       width:100%;
-      margin-bottom:.75rem; /* space under search */
+      margin-bottom:.75rem;
       color:var(--clr-text);
       outline:none;
     }
@@ -72,7 +89,8 @@
     /* dual pane layout */
     #panes{
       display:flex;
-      width:100%;
+      width:clamp(240px,95vw,1000px);
+      max-width:100%;
       gap:1rem;
     }
     #results,
@@ -80,7 +98,6 @@
       flex:1 1 0;
       display:flex;
       flex-direction:column;
-      min-height:calc(2.5rem * 10 + 2rem); /* 10 rows */
     }
     #results ul,
     #recent ul{
@@ -88,6 +105,7 @@
       margin:0;
       padding:0;
       width:100%;
+      max-height:calc(2.5rem * 5 + 1rem); /* 5 visible items */
       overflow-y:auto;
     }
     #results li,
@@ -105,49 +123,8 @@
     #results li img,
     #recent li img{width:32px;height:32px;border-radius:4px;object-fit:cover}
 
-    /* smartphone stack */
     @media (max-width:600px){
       #panes{flex-direction:column}
-    }
-
-    /* ---------- PLAY BAR ---------- */
-    #playBar{
-      position:fixed;
-      bottom:1.5rem;
-      left:50%;
-      translate:-50% 0;
-      z-index:10;
-      display:flex;
-      align-items:center;
-      gap:.75rem;
-    }
-    #toggleBtn{
-      width:3rem;
-      height:3rem;
-      border:none;
-      border-radius:50%;
-      background:var(--clr-accent);
-      color:#111;
-      font-size:1.5rem;
-      cursor:pointer;
-    }
-    #utilBar{
-      position:fixed;
-      top:1rem;
-      right:1rem;
-      z-index:15;
-    }
-    #utilBar button{
-      width:2.5rem;
-      height:2.5rem;
-      border:none;
-      border-radius:50%;
-      background:rgba(255,255,255,.15);
-      color:var(--clr-text);
-      font-size:1.2rem;
-      cursor:pointer;
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
     }
   </style>
 </head>
@@ -166,22 +143,19 @@
     <div class="blob"></div>
   </div>
 
-  <!-- utility button -->
-  <div id="utilBar"><button id="fsBtn" title="Full screen">⛶</button></div>
-
   <!-- UI -->
   <main>
-    <div id="searchWrap">
-      <!-- Now-Playing bar (top) -->
-      <div id="nowBar" class="glass">
-        <button id="toggleBtn" title="Play / Pause">▶</button>
-        <span id="now">Choose a station</span>
-      </div>
+    <!-- Now-Playing bar (always visible) -->
+    <div id="nowBar" class="glass">
+      <span id="now">Choose a station</span>
+      <button id="toggleBtn" class="btn" title="Play / Pause">▶</button>
+      <button id="fsBtn" class="btn" title="Full screen">⛶</button>
+      <button id="hideBtn" class="btn" title="Hide/Show panels">👁</button>
+    </div>
 
-      <!-- search bar with space underneath -->
+    <!-- content that can be hidden -->
+    <div id="contentToHide">
       <input id="search" class="glass" type="search" placeholder="Type a station name…" autocomplete="off"/>
-
-      <!-- dual-pane layout -->
       <div id="panes">
         <!-- Search results (left) -->
         <div id="results" class="glass">
@@ -211,13 +185,14 @@
 
     /* 2.  nodes */
     const searchInp = document.getElementById('search');
-    const resultsUl = document.querySelector('#results ul');
-    const recentUl  = document.querySelector('#recent ul');
+    const resultsUl = document.querySelector('#contentToHide #results ul');
+    const recentUl  = document.querySelector('#contentToHide #recent ul');
     const player    = document.getElementById('player');
     const nowText   = document.getElementById('now');
     const toggleBtn = document.getElementById('toggleBtn');
-    const searchWrap = document.getElementById('searchWrap');
-    const fsBtn = document.getElementById('fsBtn');
+    const fsBtn     = document.getElementById('fsBtn');
+    const hideBtn   = document.getElementById('hideBtn');
+    const content   = document.getElementById('contentToHide');
 
     /* 3.  recent list (localStorage) */
     const MAX_RECENT = 10;
@@ -244,36 +219,14 @@
       });
     }
 
-    /* 4.  show / hide search */
-    let hideTimer;
-    function showSearch(){
-      searchWrap.style.opacity = 1;
-      clearTimeout(hideTimer);
+    /* 4.  hide/show panels (only contentToHide) */
+    function togglePanels(){
+      const hidden = content.style.opacity==='0';
+      content.style.opacity = hidden ? '1' : '0';
     }
-    function scheduleHide(){
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(()=> searchWrap.style.opacity = 0, 15000);
-    }
-    document.addEventListener('mousemove', showSearch);
-    document.addEventListener('click', (e)=>{
-      if(e.target.closest('#searchWrap') || e.target.closest('#utilBar')) return;
-      searchWrap.style.opacity = searchWrap.style.opacity==='0' ? 1 : 0;
-      if(searchWrap.style.opacity==='1') scheduleHide();
-    });
+    hideBtn.addEventListener('click', togglePanels);
 
     /* 5.  live search */
-    let searchDebounce;
-    searchInp.addEventListener('input', ()=>{
-      clearTimeout(searchDebounce);
-      scheduleHide();
-      searchDebounce = setTimeout(async ()=>{
-        const term = searchInp.value.trim();
-        if(term.length<2){ render([]); return; }
-        const stations = await searchStations(term);
-        render(stations);
-      }, 300);
-    });
-
     function render(list){
       resultsUl.innerHTML='';
       for (let i = 0; i < 10; i++) {
@@ -284,7 +237,7 @@
             <img loading="lazy" src="${list[i].favicon||''}" alt="" onerror="this.style.display='none';"/>
             <span>${list[i].name}</span>
           `;
-          li.onclick = ()=> { select(list[i]); scheduleHide(); };
+          li.onclick = ()=> select(list[i]);
         }
         resultsUl.appendChild(li);
       }
