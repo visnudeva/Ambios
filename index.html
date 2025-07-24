@@ -53,6 +53,8 @@
       padding:.75rem 1rem;
     }
     main{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:2rem;height:100%;gap:1rem}
+
+    /* now playing bar (full width) */
     #nowBar{
       width:clamp(240px,95vw,1000px);
       max-width:100%;
@@ -61,6 +63,7 @@
       gap:.5rem;
     }
     #nowBar > span{flex:1;font-weight:600}
+    /* flat circle buttons */
     .btn{
       width:2.5rem;
       height:2.5rem;
@@ -74,12 +77,16 @@
       align-items:center;
       justify-content:center;
     }
+
+    /* search bar full width + space below */
     #search{
       width:100%;
       margin-bottom:.75rem;
       color:var(--clr-text);
       outline:none;
     }
+
+    /* dual pane layout */
     #panes{
       display:flex;
       width:clamp(240px,95vw,1000px);
@@ -91,8 +98,6 @@
       flex:1 1 0;
       display:flex;
       flex-direction:column;
-      max-height:calc(2.5rem * 5 + 1rem); /* 5 visible items */
-      overflow-y:auto;
     }
     #results ul,
     #recent ul{
@@ -100,6 +105,8 @@
       margin:0;
       padding:0;
       width:100%;
+      max-height:calc(2.5rem * 5 + 1rem); /* 5 visible items */
+      overflow-y:auto;
     }
     #results li,
     #recent li{
@@ -115,6 +122,7 @@
     #recent li:hover{background:rgba(255,255,255,0.08)}
     #results li img,
     #recent li img{width:32px;height:32px;border-radius:4px;object-fit:cover}
+
     @media (max-width:600px){
       #panes{flex-direction:column}
     }
@@ -137,6 +145,7 @@
 
   <!-- UI -->
   <main>
+    <!-- Now-Playing bar (always visible) -->
     <div id="nowBar" class="glass">
       <span id="now">Choose a station</span>
       <button id="toggleBtn" class="btn" title="Play / Pause">▶</button>
@@ -144,11 +153,21 @@
       <button id="hideBtn" class="btn" title="Hide/Show panels">👁</button>
     </div>
 
+    <!-- content that can be hidden -->
     <div id="contentToHide">
       <input id="search" class="glass" type="search" placeholder="Type a station name…" autocomplete="off"/>
       <div id="panes">
-        <div id="results" class="glass"><ul></ul></div>
-        <div id="recent" class="glass"><ul><li style="pointer-events:none;font-weight:600;color:var(--clr-accent);min-height:2.5rem;">Recent</li></ul></div>
+        <!-- Search results (left) -->
+        <div id="results" class="glass">
+          <ul></ul>
+        </div>
+
+        <!-- Recent list (right) -->
+        <div id="recent" class="glass">
+          <ul>
+            <li style="pointer-events:none;font-weight:600;color:var(--clr-accent);min-height:2.5rem;">Recent</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -156,13 +175,7 @@
   </main>
 
   <script type="module">
-    /* ---- mobile detection ---- */
-    const isMobile = window.innerWidth <= 600 || navigator.maxTouchPoints > 0;
-    const FFT_SIZE = isMobile ? 256 : 2048;
-    const SAMPLE_RATE = isMobile ? 30 : 60; // FPS
-    let DATA_ARRAY;
-
-    /* ---- radio-browser helper ---- */
+    /* 1.  radio-browser helper */
     const API = 'https://de1.api.radio-browser.info/json/stations/search';
     async function searchStations(term, limit = 20){
       const res = await fetch(`${API}?name=${encodeURIComponent(term)}&limit=${limit}&hidebroken=true`,
@@ -170,7 +183,7 @@
       return res.json();
     }
 
-    /* ---- nodes ---- */
+    /* 2.  nodes */
     const searchInp = document.getElementById('search');
     const resultsUl = document.querySelector('#contentToHide #results ul');
     const recentUl  = document.querySelector('#contentToHide #recent ul');
@@ -181,13 +194,7 @@
     const hideBtn   = document.getElementById('hideBtn');
     const content   = document.getElementById('contentToHide');
 
-    /* ---- canvas mobile scaling ---- */
-    if (isMobile) {
-      document.documentElement.style.setProperty('--beat-scale', 1); // start normal
-      document.documentElement.style.setProperty('device-pixel-ratio', 0.5);
-    }
-
-    /* ---- recent list (localStorage) ---- */
+    /* 3.  recent list (localStorage) */
     const MAX_RECENT = 10;
     let recent = JSON.parse(localStorage.getItem('lava-recent') || '[]');
 
@@ -212,14 +219,14 @@
       });
     }
 
-    /* ---- hide/show panels ---- */
+    /* 4.  hide/show panels (only contentToHide) */
     function togglePanels(){
       const hidden = content.style.opacity==='0';
       content.style.opacity = hidden ? '1' : '0';
     }
     hideBtn.addEventListener('click', togglePanels);
 
-    /* ---- live search (5 visible) ---- */
+    /* 5.  live search */
     function render(list){
       resultsUl.innerHTML='';
       for (let i = 0; i < 10; i++) {
@@ -236,7 +243,7 @@
       }
     }
 
-    /* ---- station selection & play/pause ---- */
+    /* 6.  station selection & play/pause */
     async function select(st){
       const stream = st.url_resolved || st.url;
       player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
@@ -260,36 +267,35 @@
     player.addEventListener('pause', () => toggleBtn.textContent='▶');
     player.addEventListener('play',  () => toggleBtn.textContent='⏸');
 
-    /* ---- beat-sync lava (mobile-optimized) ---- */
-    let analyser;
+    /* 7.  beat-sync lava */
     const audioCtx = new (window.AudioContext||webkitAudioContext)();
+    let analyser, dataArray;
     player.addEventListener('play', ()=>{
       if(analyser) return;
       const src = audioCtx.createMediaElementSource(player);
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = FFT_SIZE;
+      analyser.fftSize = 256;
       src.connect(analyser);
       analyser.connect(audioCtx.destination);
-      DATA_ARRAY = new Uint8Array(analyser.frequencyBinCount);
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
       beatLoop();
     });
     function beatLoop(){
-      if (!analyser) return;
-      analyser.getByteFrequencyData(DATA_ARRAY);
-      const volume = DATA_ARRAY.reduce((a,b)=>a+b)/DATA_ARRAY.length;
-      const scale = 1 + volume / (isMobile ? 120 : 256);
+      analyser.getByteFrequencyData(dataArray);
+      const volume = dataArray.reduce((a,b)=>a+b)/dataArray.length;
+      const scale  = 1 + volume/256;
       document.documentElement.style.setProperty('--beat-scale', scale.toFixed(3));
-      setTimeout(() => requestAnimationFrame(beatLoop), 1000 / SAMPLE_RATE);
+      requestAnimationFrame(beatLoop);
     }
 
-    /* ---- color cycle ---- */
+    /* 8.  color cycle */
     let hue=0;
     setInterval(()=>{
       hue = (hue + 0.5) % 360;
       document.documentElement.style.setProperty('--hue', hue);
     }, 50);
 
-    /* ---- full-screen toggle ---- */
+    /* 9.  full-screen toggle */
     fsBtn.addEventListener('click', ()=>{
       if(!document.fullscreenElement){
         document.documentElement.requestFullscreen();
