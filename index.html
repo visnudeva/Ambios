@@ -175,138 +175,125 @@
   </main>
 
   <script type="module">
-    /* 1.  radio-browser helper */
-    const API = 'https://de1.api.radio-browser.info/json/stations/search';
-    async function searchStations(term, limit = 20){
-      const res = await fetch(`${API}?name=${encodeURIComponent(term)}&limit=${limit}&hidebroken=true`,
-                              {headers:{'User-Agent':'LavaRadio/1.0'}});
-      return res.json();
-    }
+  /* ===== mobile detection ===== */
+  const isMobile = window.innerWidth <= 600 || navigator.maxTouchPoints > 0;
 
-    /* 2.  nodes */
-    const searchInp = document.getElementById('search');
-    const resultsUl = document.querySelector('#contentToHide #results ul');
-    const recentUl  = document.querySelector('#contentToHide #recent ul');
-    const player    = document.getElementById('player');
-    const nowText   = document.getElementById('now');
-    const toggleBtn = document.getElementById('toggleBtn');
-    const fsBtn     = document.getElementById('fsBtn');
-    const hideBtn   = document.getElementById('hideBtn');
-    const content   = document.getElementById('contentToHide');
+  /* ===== mobile-optimised constants ===== */
+  const FFT_SIZE  = isMobile ? 256 : 2048;   // smaller FFT
+  const BEAT_FPS  = isMobile ? 30 : 60;      // 30 FPS for mobile
+  const DPR_SCALE = isMobile ? 0.5 : 1;      // lower canvas resolution
 
-    /* 3.  recent list (localStorage) */
-    const MAX_RECENT = 10;
-    let recent = JSON.parse(localStorage.getItem('lava-recent') || '[]');
+  /* ===== radio-browser helper ===== */
+  const API = 'https://de1.api.radio-browser.info/json/stations/search';
+  async function searchStations(term, limit = 20){
+    const res = await fetch(`${API}?name=${encodeURIComponent(term)}&limit=${limit}&hidebroken=true`,{headers:{'User-Agent':'LavaRadio/1.0'}});
+    return res.json();
+  }
 
-    function saveRecent(station){
-      recent = recent.filter(s => s.url !== station.url);
-      recent.unshift(station);
-      recent = recent.slice(0, MAX_RECENT);
-      localStorage.setItem('lava-recent', JSON.stringify(recent));
-      renderRecent();
-    }
+  /* ===== nodes ===== */
+  const searchInp = document.getElementById('search');
+  const resultsUl = document.querySelector('#contentToHide #results ul');
+  const recentUl  = document.querySelector('#contentToHide #recent ul');
+  const player    = document.getElementById('player');
+  const nowText   = document.getElementById('now');
+  const toggleBtn = document.getElementById('toggleBtn');
+  const fsBtn     = document.getElementById('fsBtn');
+  const hideBtn   = document.getElementById('hideBtn');
+  const content   = document.getElementById('contentToHide');
 
-    function renderRecent(){
-      while(recentUl.children.length > 1) recentUl.removeChild(recentUl.lastChild);
-      recent.forEach(st => {
-        const li=document.createElement('li');
-        li.innerHTML=`
-          <img loading="lazy" src="${st.favicon||''}" alt="" onerror="this.style.display='none';"/>
-          <span>${st.name}</span>
-        `;
-        li.onclick = ()=> select(st);
-        recentUl.appendChild(li);
-      });
-    }
-
-    /* 4.  hide/show panels (only contentToHide) */
-    function togglePanels(){
-      const hidden = content.style.opacity==='0';
-      content.style.opacity = hidden ? '1' : '0';
-    }
-    hideBtn.addEventListener('click', togglePanels);
-
-    /* 5.  live search */
-    function render(list){
-      resultsUl.innerHTML='';
-      for (let i = 0; i < 10; i++) {
-        const li=document.createElement('li');
-        li.style.minHeight='2.5rem';
-        if (list[i]) {
-          li.innerHTML=`
-            <img loading="lazy" src="${list[i].favicon||''}" alt="" onerror="this.style.display='none';"/>
-            <span>${list[i].name}</span>
-          `;
-          li.onclick = ()=> select(list[i]);
-        }
-        resultsUl.appendChild(li);
-      }
-    }
-
-    /* 6.  station selection & play/pause */
-    async function select(st){
-      const stream = st.url_resolved || st.url;
-      player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
-      player.play()
-        .then(()=> {
-          nowText.textContent = `Now playing: ${st.name}`;
-          saveRecent(st);
-        })
-        .catch(e=> nowText.textContent = 'Playback error: ' + e.message);
-    }
-
-    toggleBtn.addEventListener('click', ()=>{
-      if(player.paused){
-        player.play();
-        toggleBtn.textContent = '⏸';
-      }else{
-        player.pause();
-        toggleBtn.textContent = '▶';
-      }
-    });
-    player.addEventListener('pause', () => toggleBtn.textContent='▶');
-    player.addEventListener('play',  () => toggleBtn.textContent='⏸');
-
-    /* 7.  beat-sync lava */
-    const audioCtx = new (window.AudioContext||webkitAudioContext)();
-    let analyser, dataArray;
-    player.addEventListener('play', ()=>{
-      if(analyser) return;
-      const src = audioCtx.createMediaElementSource(player);
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      src.connect(analyser);
-      analyser.connect(audioCtx.destination);
-      dataArray = new Uint8Array(analyser.frequencyBinCount);
-      beatLoop();
-    });
-    function beatLoop(){
-      analyser.getByteFrequencyData(dataArray);
-      const volume = dataArray.reduce((a,b)=>a+b)/dataArray.length;
-      const scale  = 1 + volume/256;
-      document.documentElement.style.setProperty('--beat-scale', scale.toFixed(3));
-      requestAnimationFrame(beatLoop);
-    }
-
-    /* 8.  color cycle */
-    let hue=0;
-    setInterval(()=>{
-      hue = (hue + 0.5) % 360;
-      document.documentElement.style.setProperty('--hue', hue);
-    }, 50);
-
-    /* 9.  full-screen toggle */
-    fsBtn.addEventListener('click', ()=>{
-      if(!document.fullscreenElement){
-        document.documentElement.requestFullscreen();
-      }else{
-        document.exitFullscreen();
-      }
-    });
-
-    /* init */
+  /* ===== recent list (localStorage) ===== */
+  const MAX_RECENT = 10;
+  let recent = JSON.parse(localStorage.getItem('lava-recent') || '[]');
+  function saveRecent(station){
+    recent = recent.filter(s => s.url !== station.url);
+    recent.unshift(station);
+    recent = recent.slice(0, MAX_RECENT);
+    localStorage.setItem('lava-recent', JSON.stringify(recent));
     renderRecent();
-    render([]);
-  </script>
+  }
+  function renderRecent(){
+    while(recentUl.children.length > 1) recentUl.removeChild(recentUl.lastChild);
+    recent.forEach(st => {
+      const li=document.createElement('li');
+      li.innerHTML=`<img loading="lazy" src="${st.favicon||''}" alt="" onerror="this.style.display='none';"/><span>${st.name}</span>`;
+      li.onclick = ()=> select(st);
+      recentUl.appendChild(li);
+    });
+  }
+
+  /* ===== hide/show panels ===== */
+  function togglePanels(){
+    const hidden = content.style.opacity==='0';
+    content.style.opacity = hidden ? '1' : '0';
+  }
+  hideBtn.addEventListener('click', togglePanels);
+
+  /* ===== live search ===== */
+  function render(list){
+    resultsUl.innerHTML='';
+    for (let i = 0; i < 10; i++) {
+      const li=document.createElement('li');
+      li.style.minHeight='2.5rem';
+      if (list[i]) {
+        li.innerHTML=`<img loading="lazy" src="${list[i].favicon||''}" alt="" onerror="this.style.display='none';"/><span>${list[i].name}</span>`;
+        li.onclick = ()=> select(list[i]);
+      }
+      resultsUl.appendChild(li);
+    }
+  }
+
+  /* ===== station selection ===== */
+  async function select(st){
+    const stream = st.url_resolved || st.url;
+    player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
+    player.play()
+      .then(()=>{ nowText.textContent = `Now playing: ${st.name}`; saveRecent(st); })
+      .catch(e=> nowText.textContent = 'Playback error: ' + e.message);
+  }
+  toggleBtn.addEventListener('click', ()=>{
+    if(player.paused){ player.play(); toggleBtn.textContent='⏸'; }
+    else{ player.pause(); toggleBtn.textContent='▶'; }
+  });
+  player.addEventListener('pause', ()=> toggleBtn.textContent='▶');
+  player.addEventListener('play',  ()=> toggleBtn.textContent='⏸');
+
+  /* ===== beat-sync lava (mobile-optimised) ===== */
+  let analyser;
+  const audioCtx = new (window.AudioContext||webkitAudioContext)();
+  const BEAT_INTERVAL = 1000 / (isMobile ? 30 : 60); // throttled FPS
+  let DATA_ARRAY;                                    // reused buffer
+  player.addEventListener('play', ()=>{
+    if(analyser) return;
+    const src = audioCtx.createMediaElementSource(player);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = FFT_SIZE;                     // 256 on mobile, 2048 on desktop
+    src.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    DATA_ARRAY = new Uint8Array(analyser.frequencyBinCount);
+    beatLoop();
+  });
+  function beatLoop(){
+    if(!analyser) return;
+    analyser.getByteFrequencyData(DATA_ARRAY);
+    const volume = DATA_ARRAY.reduce((a,b)=>a+b)/DATA_ARRAY.length;
+    const scale = 1 + volume / (isMobile ? 120 : 256);
+    document.documentElement.style.setProperty('--beat-scale', scale.toFixed(2));
+    setTimeout(()=> requestAnimationFrame(beatLoop), BEAT_INTERVAL);
+  }
+
+  /* ===== color cycle ===== */
+  let hue=0;
+  setInterval(()=>{ hue=(hue+0.5)%360; document.documentElement.style.setProperty('--hue',hue); },50);
+
+  /* ===== full-screen toggle ===== */
+  fsBtn.addEventListener('click', ()=>{
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  });
+
+  /* init */
+  renderRecent();
+  render([]);
+</script>
 </body>
 </html>
