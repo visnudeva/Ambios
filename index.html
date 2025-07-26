@@ -53,78 +53,57 @@
       padding:.75rem 1rem;
     }
     main{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:2rem;height:100%;gap:1rem}
+    #searchWrap{width:clamp(240px,95vw,1000px);max-width:100%}
 
-    /* now playing bar (full width) */
     #nowBar{
-      width:clamp(240px,95vw,1000px);
-      max-width:100%;
+      width:100%;
+      margin-bottom:.75rem;
       display:flex;
       align-items:center;
-      gap:.5rem;
+      gap:.75rem;
     }
-    #nowBar > span{flex:1;font-weight:600}
-    /* flat circle buttons */
-    .btn{
+    #nowBar span{flex:1 1 auto}
+    #fsBtn{
       width:2.5rem;
       height:2.5rem;
+      flex-shrink:0;
+      border:none;
+      border-radius:50%;
+      background:rgba(255,255,255,.15);
+      color:var(--clr-text);
+      font-size:1.2rem;
+      cursor:pointer;
+    }
+
+    #search{width:100%;margin-bottom:.75rem;color:var(--clr-text);outline:none}
+
+    #panes{display:flex;width:100%;gap:1rem}
+    #results,#recent{flex:1 1 0;display:flex;flex-direction:column;min-height:calc(2.5rem * 10 + 2rem)}
+    #results ul,#recent ul{list-style:none;margin:0;padding:0;width:100%;overflow-y:auto}
+    #results li,#recent li{display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-radius:.5rem;cursor:pointer;min-height:2.5rem}
+    #results li:hover,#recent li:hover{background:rgba(255,255,255,0.08)}
+
+    @media (max-width:600px){#panes{flex-direction:column}}
+
+    #playBar{
+      position:fixed;
+      bottom:1.5rem;
+      left:50%;
+      translate:-50% 0;
+      z-index:10;
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+    }
+    #toggleBtn{
+      width:3rem;
+      height:3rem;
       border:none;
       border-radius:50%;
       background:var(--clr-accent);
       color:#111;
-      font-size:1.2rem;
+      font-size:1.5rem;
       cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    /* search bar full width + space below */
-    #search{
-      width:100%;
-      margin-bottom:.75rem;
-      color:var(--clr-text);
-      outline:none;
-    }
-
-    /* dual pane layout */
-    #panes{
-      display:flex;
-      width:clamp(240px,95vw,1000px);
-      max-width:100%;
-      gap:1rem;
-    }
-    #results,
-    #recent{
-      flex:1 1 0;
-      display:flex;
-      flex-direction:column;
-    }
-    #results ul,
-    #recent ul{
-      list-style:none;
-      margin:0;
-      padding:0;
-      width:100%;
-      max-height:calc(2.5rem * 5 + 1rem); /* 5 visible items */
-      overflow-y:auto;
-    }
-    #results li,
-    #recent li{
-      display:flex;
-      align-items:center;
-      gap:.75rem;
-      padding:.5rem .75rem;
-      border-radius:.5rem;
-      cursor:pointer;
-      min-height:2.5rem;
-    }
-    #results li:hover,
-    #recent li:hover{background:rgba(255,255,255,0.08)}
-    #results li img,
-    #recent li img{width:32px;height:32px;border-radius:4px;object-fit:cover}
-
-    @media (max-width:600px){
-      #panes{flex-direction:column}
     }
   </style>
 </head>
@@ -134,7 +113,8 @@
     <filter id="plasma">
       <feGaussianBlur stdDeviation="18"/>
       <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
-    </svg>
+    </filter>
+  </svg>
 
   <!-- drifting blobs -->
   <div id="blobs">
@@ -145,29 +125,18 @@
 
   <!-- UI -->
   <main>
-    <!-- Now-Playing bar (always visible) -->
-    <div id="nowBar" class="glass">
-      <span id="now">Choose a station</span>
-      <button id="toggleBtn" class="btn" title="Play / Pause">▶</button>
-      <button id="fsBtn" class="btn" title="Full screen">⛶</button>
-      <button id="hideBtn" class="btn" title="Hide/Show panels">👁</button>
-    </div>
+    <div id="searchWrap">
+      <div id="nowBar" class="glass">
+        <button id="toggleBtn" title="Play / Pause">▶</button>
+        <span id="now">Choose a station</span>
+        <button id="fsBtn" title="Full screen">⛶</button>
+      </div>
 
-    <!-- content that can be hidden -->
-    <div id="contentToHide">
       <input id="search" class="glass" type="search" placeholder="Type a station name…" autocomplete="off"/>
-      <div id="panes">
-        <!-- Search results (left) -->
-        <div id="results" class="glass">
-          <ul></ul>
-        </div>
 
-        <!-- Recent list (right) -->
-        <div id="recent" class="glass">
-          <ul>
-            <li style="pointer-events:none;font-weight:600;color:var(--clr-accent);min-height:2.5rem;">Recent</li>
-          </ul>
-        </div>
+      <div id="panes">
+        <div id="results" class="glass"><ul></ul></div>
+        <div id="recent" class="glass"><ul></ul></div>
       </div>
     </div>
 
@@ -185,14 +154,12 @@
 
     /* 2.  nodes */
     const searchInp = document.getElementById('search');
-    const resultsUl = document.querySelector('#contentToHide #results ul');
-    const recentUl  = document.querySelector('#contentToHide #recent ul');
+    const resultsUl = document.querySelector('#results ul');
+    const recentUl  = document.querySelector('#recent ul');
     const player    = document.getElementById('player');
     const nowText   = document.getElementById('now');
     const toggleBtn = document.getElementById('toggleBtn');
     const fsBtn     = document.getElementById('fsBtn');
-    const hideBtn   = document.getElementById('hideBtn');
-    const content   = document.getElementById('contentToHide');
 
     /* 3.  recent list (localStorage) */
     const MAX_RECENT = 10;
@@ -207,43 +174,41 @@
     }
 
     function renderRecent(){
-      while(recentUl.children.length > 1) recentUl.removeChild(recentUl.lastChild);
+      recentUl.innerHTML='';
       recent.forEach(st => {
         const li=document.createElement('li');
-        li.innerHTML=`
-          <img loading="lazy" src="${st.favicon||''}" alt="" onerror="this.style.display='none';"/>
-          <span>${st.name}</span>
-        `;
+        li.innerHTML=`<span>${st.name}</span>`;
         li.onclick = ()=> select(st);
         recentUl.appendChild(li);
       });
     }
 
-    /* 4.  hide/show panels (only contentToHide) */
-    function togglePanels(){
-      const hidden = content.style.opacity==='0';
-      content.style.opacity = hidden ? '1' : '0';
-    }
-    hideBtn.addEventListener('click', togglePanels);
+    /* 4.  live search (no hiding) */
+    let searchDebounce;
+    searchInp.addEventListener('input', ()=>{
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(async ()=>{
+        const term = searchInp.value.trim();
+        if(term.length<2){ render([]); return; }
+        const stations = await searchStations(term);
+        render(stations);
+      }, 300);
+    });
 
-    /* 5.  live search */
     function render(list){
       resultsUl.innerHTML='';
       for (let i = 0; i < 10; i++) {
         const li=document.createElement('li');
         li.style.minHeight='2.5rem';
         if (list[i]) {
-          li.innerHTML=`
-            <img loading="lazy" src="${list[i].favicon||''}" alt="" onerror="this.style.display='none';"/>
-            <span>${list[i].name}</span>
-          `;
+          li.innerHTML=`<span>${list[i].name}</span>`;
           li.onclick = ()=> select(list[i]);
         }
         resultsUl.appendChild(li);
       }
     }
 
-    /* 6.  station selection & play/pause */
+    /* 5.  station selection & play/pause */
     async function select(st){
       const stream = st.url_resolved || st.url;
       player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
@@ -267,7 +232,7 @@
     player.addEventListener('pause', () => toggleBtn.textContent='▶');
     player.addEventListener('play',  () => toggleBtn.textContent='⏸');
 
-    /* 7.  beat-sync lava */
+    /* 6.  beat-sync lava */
     const audioCtx = new (window.AudioContext||webkitAudioContext)();
     let analyser, dataArray;
     player.addEventListener('play', ()=>{
@@ -288,14 +253,14 @@
       requestAnimationFrame(beatLoop);
     }
 
-    /* 8.  color cycle */
+    /* 7.  color cycle */
     let hue=0;
     setInterval(()=>{
       hue = (hue + 0.5) % 360;
       document.documentElement.style.setProperty('--hue', hue);
     }, 50);
 
-    /* 9.  full-screen toggle */
+    /* 8.  full-screen toggle */
     fsBtn.addEventListener('click', ()=>{
       if(!document.fullscreenElement){
         document.documentElement.requestFullscreen();
