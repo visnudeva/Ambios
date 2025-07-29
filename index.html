@@ -126,13 +126,13 @@
       gap:.75rem;
     }
     #toggleBtn{
-      width:3rem;
-      height:3rem;
+      width:2.5rem; /* Matched width of fsBtn */
+      height:2.5rem; /* Matched height of fsBtn */
       border:none;
       border-radius:50%;
-      background:var(--clr-accent);
-      color:#111;
-      font-size:1.5rem;
+      background:rgba(255,255,255,.15); /* Matched background of fsBtn */
+      color:var(--clr-text); /* Matched color of fsBtn */
+      font-size:1.2rem; /* Matched font-size of fsBtn */
       cursor:pointer;
     }
   </style>
@@ -157,8 +157,8 @@
       </div>
 
       <div id="nowBar" class="glass">
-        <button id="toggleBtn" title="Play / Pause">▶</button>
         <span id="now">Choose a station</span>
+        <button id="toggleBtn" title="Play / Pause">▶</button>
         <button id="fsBtn" title="Full screen">⛶</button>
       </div>
 
@@ -235,7 +235,7 @@
     function render(list){
       resultsUl.innerHTML='';
       // Ensure 5 list items are always rendered to maintain height, even if empty
-      for (let i = 0; i < Math.max(5, list.length); i++) { /* Corrected Math.Max to Math.max */
+      for (let i = 0; i < Math.max(5, list.length); i++) {
         const li=document.createElement('li');
         li.style.minHeight='2.5rem';
         if (list[i]) {
