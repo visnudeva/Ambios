@@ -246,6 +246,7 @@
     async function select(st){
       const stream = st.url_resolved || st.url;
       player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
+      player.dataset.stationName = st.name;          // store for later
       try {
         if (audioCtx.state === 'suspended') await audioCtx.resume();
         await player.play();
@@ -280,10 +281,16 @@
       }
     });
 
-    /* 6.  beat-sync lava */
+    /* 6.  beat-sync lava / audio events */
     const audioCtx = new (window.AudioContext||webkitAudioContext)();
     let analyser, dataArray;
+
+    player.addEventListener('pause', () => {
+      nowText.textContent = 'Paused';
+    });
+
     player.addEventListener('play', ()=>{
+      nowText.textContent = `Now playing: ${player.dataset.stationName || 'Choose a station'}`;
       if(analyser) return;
       const src = audioCtx.createMediaElementSource(player);
       analyser = audioCtx.createAnalyser();
