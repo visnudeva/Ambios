@@ -114,7 +114,16 @@
     #results li,#recent li{display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-radius:.5rem;cursor:pointer;min-height:2.5rem}
     #results li:hover,#recent li:hover{background:rgba(255,255,255,0.08)}
 
-    @media (max-width:600px){#panes{flex-direction:column}}
+    @media (max-width:600px){
+      #panes{flex-direction:column}
+      #blobs-container {
+        filter: url(#plasma-mobile); /* Apply a different, lighter filter for mobile */
+      }
+      /* Make blobs slightly smaller on mobile to reduce GPU/CPU load */
+      .blob:nth-child(1){width:50vmin;height:50vmin;}
+      .blob:nth-child(2){width:30vmin;height:30vmin;}
+      .blob:nth-child(3){width:15vmin;height:15vmin;}
+    }
 
     #playBar{
       position:fixed;
@@ -134,6 +143,11 @@
     <filter id="plasma">
       <feGaussianBlur stdDeviation="18"/>
       <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
+    </filter>
+    <!-- New filter for mobile to make the blobs lighter and less GPU intensive -->
+    <filter id="plasma-mobile">
+      <feGaussianBlur stdDeviation="10"/> <!-- Reduced blur for lighter GPU load -->
+      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 8 -2"/> <!-- Adjusted alpha values for a lighter effect -->
     </filter>
   </svg>
 
