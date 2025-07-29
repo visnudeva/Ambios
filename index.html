@@ -16,11 +16,10 @@
     html,body{height:100%;overflow:hidden;background:var(--clr-bg);color:var(--clr-text)}
 
     /* ---------- GLIDING BLOBS ---------- */
-    /* Blobs are now absolutely positioned within #blobs-container */
-    #blobs-container { /* New container for blobs to apply filter */
+    #blobs-container {
       position: absolute;
       inset: 0;
-      filter: url(#plasma); /* Filter applied here */
+      filter: url(#plasma);
       z-index: -1;
     }
     .blob{
@@ -63,8 +62,8 @@
       z-index:1;
       display:flex;
       flex-direction:column;
-      align-items:center; /* Centers horizontally */
-      justify-content: center; /* Centers vertically */
+      align-items:center;
+      justify-content: center;
       padding:2rem;
       height:100%;
       gap:1rem;
@@ -72,9 +71,9 @@
     #searchWrap{
       width:clamp(240px,95vw,1000px);
       max-width:100%;
-      position:relative; /* Added for absolute positioning of #blobs-container */
-      overflow:hidden; /* Added to clip blobs outside this container */
-      border-radius:1rem; /* Ensure searchWrap has rounded corners */
+      position:relative;
+      overflow:hidden;
+      border-radius:1rem;
     }
 
     #nowBar{
@@ -83,33 +82,32 @@
       display:flex;
       align-items:center;
       gap:.75rem;
-      cursor:pointer; /* Added for clickability */
-      justify-content: center; /* Center content */
+      cursor:pointer;
+      justify-content: center;
       position: relative;
       overflow: hidden;
     }
     #nowBar span{
         flex:1 1 auto;
-        text-align: center; /* Center the text */
-        transition: transform 0.2s ease-out; /* Smooth transition for zoom */
+        text-align: center;
+        transition: transform 0.2s ease-out;
     }
     #nowBar.zoomed span {
-        transform: scale(0.9); /* Zoom out effect */
+        transform: scale(0.9);
     }
-
 
     #search{width:100%;margin-bottom:.75rem;color:var(--clr-text);outline:none}
 
-    #panes{display:flex;flex-direction:column;width:100%;gap:1rem} /* Changed to column direction */
-    #results, #recent{flex:1 1 auto; display:flex;flex-direction:column;} /* Adjusted flex property */
+    #panes{display:flex;flex-direction:column;width:100%;gap:1rem}
+    #results, #recent{flex:1 1 auto; display:flex;flex-direction:column;}
     #results ul, #recent ul{
       list-style:none;
       margin:0;
       padding:0;
       width:100%;
       overflow-y:auto;
-      min-height:calc(2.5rem * 5 + 0.5rem * 4); /* 5 rows * item_height + 4 gaps between items (0.5rem each) */
-      max-height:calc(2.5rem * 5 + 0.5rem * 4); /* Set max-height to ensure scrollbar */
+      min-height:calc(2.5rem * 5 + 0.5rem * 4);
+      max-height:calc(2.5rem * 5 + 0.5rem * 4);
     }
     #results li,#recent li{display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-radius:.5rem;cursor:pointer;min-height:2.5rem}
     #results li:hover,#recent li:hover{background:rgba(255,255,255,0.08)}
@@ -117,9 +115,8 @@
     @media (max-width:600px){
       #panes{flex-direction:column}
       #blobs-container {
-        filter: url(#plasma-mobile); /* Apply a different, lighter filter for mobile */
+        filter: url(#plasma-mobile);
       }
-      /* Further optimize blob sizes for mobile to reduce GPU/CPU load */
       .blob:nth-child(1){width:45vmin;height:45vmin;}
       .blob:nth-child(2){width:25vmin;height:25vmin;}
       .blob:nth-child(3){width:10vmin;height:10vmin;}
@@ -144,17 +141,15 @@
       <feGaussianBlur stdDeviation="18"/>
       <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
     </filter>
-    <!-- Optimized filter for mobile to make the blobs lighter and less GPU/CPU intensive -->
     <filter id="plasma-mobile">
-      <feGaussianBlur stdDeviation="8"/> <!-- Further reduced blur for lighter GPU load -->
-      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 6 -1"/> <!-- Adjusted alpha values for a more subtle effect -->
+      <feGaussianBlur stdDeviation="8"/>
+      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 6 -1"/>
     </filter>
   </svg>
 
   <!-- UI -->
   <main>
     <div id="searchWrap">
-      <!-- New container for drifting blobs -->
       <div id="blobs-container">
         <div class="blob"></div>
         <div class="blob"></div>
@@ -191,7 +186,7 @@
     const recentUl  = document.querySelector('#recent ul');
     const player    = document.getElementById('player');
     const nowText   = document.getElementById('now');
-    const nowBar    = document.getElementById('nowBar'); // Get the nowBar element
+    const nowBar    = document.getElementById('nowBar');
 
     /* 3.  recent list (localStorage) */
     const MAX_RECENT = 10;
@@ -207,22 +202,20 @@
 
     function renderRecent(){
       recentUl.innerHTML='';
-      // Ensure 5 list items are always rendered to maintain height, even if empty
       for (let i = 0; i < Math.max(5, recent.length); i++) {
         const li=document.createElement('li');
-        li.style.minHeight='2.5rem'; // Ensure consistent height for each row
+        li.style.minHeight='2.5rem';
         if (recent[i]) {
           li.innerHTML=`<span>${recent[i].name}</span>`;
           li.onclick = ()=> select(recent[i]);
         } else {
-            // Add a non-breaking space for empty rows to maintain height
             li.innerHTML=`<span>&nbsp;</span>`;
         }
         recentUl.appendChild(li);
       }
     }
 
-    /* 4.  live search (no hiding) */
+    /* 4.  live search */
     let searchDebounce;
     searchInp.addEventListener('input', ()=>{
       clearTimeout(searchDebounce);
@@ -236,7 +229,6 @@
 
     function render(list){
       resultsUl.innerHTML='';
-      // Ensure 5 list items are always rendered to maintain height, even if empty
       for (let i = 0; i < Math.max(5, list.length); i++) {
         const li=document.createElement('li');
         li.style.minHeight='2.5rem';
@@ -244,7 +236,6 @@
           li.innerHTML=`<span>${list[i].name}</span>`;
           li.onclick = ()=> select(list[i]);
         } else {
-            // Add a non-breaking space for empty rows to maintain height
             li.innerHTML=`<span>&nbsp;</span>`;
         }
         resultsUl.appendChild(li);
@@ -253,17 +244,28 @@
 
     /* 5.  station selection & play/pause */
     async function select(st){
-      const stream = st.url_resolved || st.url;
-      player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
+      // 1) pick the resolved URL
+      let stream = st.url_resolved || st.url;
+
+      // 2) force HTTPS
+      if (!stream.startsWith('https://')) {
+        stream = stream.replace(/^http:\/\//, 'https://');
+      }
+      if (!stream.startsWith('https://')) {
+        stream = 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
+      }
+
+      player.src = stream;
+
       try {
         await player.play();
         nowText.textContent = `Now playing: ${st.name}`;
         saveRecent(st);
       } catch (e) {
         if (e.name === 'AbortError') {
-          nowText.textContent = 'Playback aborted (e.g., by user or new selection).';
+          nowText.textContent = 'Playback aborted.';
         } else if (e.name === 'NotSupportedError') {
-          nowText.textContent = 'Playback error: Media format not supported or network issue.';
+          nowText.textContent = 'Media format not supported or network issue.';
         } else {
           nowText.textContent = 'Playback error: ' + e.message;
         }
@@ -271,34 +273,20 @@
       }
     }
 
-    // Play/Pause functionality for nowBar click
+    // Play/Pause on nowBar click
     nowBar.addEventListener('click', () => {
-      if (player.paused) {
-        player.play();
-      } else {
-        player.pause();
-      }
-      // Add and remove 'zoomed' class for visual effect
+      if (player.paused) player.play(); else player.pause();
       nowBar.classList.add('zoomed');
-      setTimeout(() => {
-        nowBar.classList.remove('zoomed');
-      }, 200); // Duration of the zoom-out transition
+      setTimeout(() => nowBar.classList.remove('zoomed'), 200);
     });
 
-    // Keyboard control for play/pause (spacebar)
+    // Spacebar control
     document.addEventListener('keydown', (event) => {
       if (event.code === 'Space') {
-        event.preventDefault(); // Prevent scrolling the page
-        if (player.paused) {
-          player.play();
-        } else {
-          player.pause();
-        }
-        // Add and remove 'zoomed' class for visual effect
+        event.preventDefault();
+        if (player.paused) player.play(); else player.pause();
         nowBar.classList.add('zoomed');
-        setTimeout(() => {
-          nowBar.classList.remove('zoomed');
-        }, 200); // Duration of the zoom-out transition
+        setTimeout(() => nowBar.classList.remove('zoomed'), 200);
       }
     });
 
