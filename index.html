@@ -119,10 +119,10 @@
       #blobs-container {
         filter: url(#plasma-mobile); /* Apply a different, lighter filter for mobile */
       }
-      /* Make blobs slightly smaller on mobile to reduce GPU/CPU load */
-      .blob:nth-child(1){width:30vmin;height:30vmin;}
-      .blob:nth-child(2){width:10vmin;height:10vmin;}
-      .blob:nth-child(3){width:5vmin;height:5vmin;}
+      /* Further optimize blob sizes for mobile to reduce GPU/CPU load */
+      .blob:nth-child(1){width:45vmin;height:45vmin;}
+      .blob:nth-child(2){width:25vmin;height:25vmin;}
+      .blob:nth-child(3){width:10vmin;height:10vmin;}
     }
 
     #playBar{
@@ -144,10 +144,10 @@
       <feGaussianBlur stdDeviation="18"/>
       <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
     </filter>
-    <!-- New filter for mobile to make the blobs lighter and less GPU intensive -->
+    <!-- Optimized filter for mobile to make the blobs lighter and less GPU/CPU intensive -->
     <filter id="plasma-mobile">
-      <feGaussianBlur stdDeviation="0"/> <!-- Reduced blur for lighter GPU load -->
-      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 3 -1"/> <!-- Adjusted alpha values for a lighter effect -->
+      <feGaussianBlur stdDeviation="8"/> <!-- Further reduced blur for lighter GPU load -->
+      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 6 -1"/> <!-- Adjusted alpha values for a more subtle effect -->
     </filter>
   </svg>
 
