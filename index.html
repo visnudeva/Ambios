@@ -146,7 +146,7 @@
     </filter>
     <!-- New filter for mobile to make the blobs lighter and less GPU intensive -->
     <filter id="plasma-mobile">
-      <feGaussianBlur stdDeviation="10"/> <!-- Reduced blur for lighter GPU load -->
+      <feGaussianBlur stdDeviation="5"/> <!-- Reduced blur for lighter GPU load -->
       <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 8 -2"/> <!-- Adjusted alpha values for a lighter effect -->
     </filter>
   </svg>
