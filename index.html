@@ -244,28 +244,18 @@
 
     /* 5.  station selection & play/pause */
     async function select(st){
-      // 1) pick the resolved URL
-      let stream = st.url_resolved || st.url;
-
-      // 2) force HTTPS
-      if (!stream.startsWith('https://')) {
-        stream = stream.replace(/^http:\/\//, 'https://');
-      }
-      if (!stream.startsWith('https://')) {
-        stream = 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
-      }
-
-      player.src = stream;
-
+      const stream = st.url_resolved || st.url;
+      player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
       try {
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
         await player.play();
         nowText.textContent = `Now playing: ${st.name}`;
         saveRecent(st);
       } catch (e) {
         if (e.name === 'AbortError') {
-          nowText.textContent = 'Playback aborted.';
+          nowText.textContent = 'Playback aborted (e.g., by user or new selection).';
         } else if (e.name === 'NotSupportedError') {
-          nowText.textContent = 'Media format not supported or network issue.';
+          nowText.textContent = 'Playback error: Media format not supported or network issue.';
         } else {
           nowText.textContent = 'Playback error: ' + e.message;
         }
