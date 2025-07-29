@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Lava Radio</title>
+  <title>Ambios</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
     :root{
@@ -16,7 +16,13 @@
     html,body{height:100%;overflow:hidden;background:var(--clr-bg);color:var(--clr-text)}
 
     /* ---------- GLIDING BLOBS ---------- */
-    #blobs{position:fixed;inset:0;filter:url(#plasma);z-index:0}
+    /* Blobs are now absolutely positioned within #blobs-container */
+    #blobs-container { /* New container for blobs to apply filter */
+      position: absolute;
+      inset: 0;
+      filter: url(#plasma); /* Filter applied here */
+      z-index: -1;
+    }
     .blob{
       position:absolute;
       border-radius:50%;
@@ -52,8 +58,24 @@
       -webkit-backdrop-filter:blur(12px);
       padding:.75rem 1rem;
     }
-    main{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:2rem;height:100%;gap:1rem}
-    #searchWrap{width:clamp(240px,95vw,1000px);max-width:100%}
+    main{
+      position:relative;
+      z-index:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center; /* Centers horizontally */
+      justify-content: center; /* Centers vertically */
+      padding:2rem;
+      height:100%;
+      gap:1rem;
+    }
+    #searchWrap{
+      width:clamp(240px,95vw,1000px);
+      max-width:100%;
+      position:relative; /* Added for absolute positioning of #blobs-container */
+      overflow:hidden; /* Added to clip blobs outside this container */
+      border-radius:1rem; /* Ensure searchWrap has rounded corners */
+    }
 
     #nowBar{
       width:100%;
@@ -77,9 +99,17 @@
 
     #search{width:100%;margin-bottom:.75rem;color:var(--clr-text);outline:none}
 
-    #panes{display:flex;width:100%;gap:1rem}
-    #results,#recent{flex:1 1 0;display:flex;flex-direction:column;min-height:calc(2.5rem * 10 + 2rem)}
-    #results ul,#recent ul{list-style:none;margin:0;padding:0;width:100%;overflow-y:auto}
+    #panes{display:flex;flex-direction:column;width:100%;gap:1rem} /* Changed to column direction */
+    #results, #recent{flex:1 1 auto; display:flex;flex-direction:column;} /* Adjusted flex property */
+    #results ul, #recent ul{
+      list-style:none;
+      margin:0;
+      padding:0;
+      width:100%;
+      overflow-y:auto;
+      min-height:calc(2.5rem * 5 + 0.5rem * 4); /* 5 rows * item_height + 4 gaps between items (0.5rem each) */
+      max-height:calc(2.5rem * 5 + 0.5rem * 4); /* Set max-height to ensure scrollbar */
+    }
     #results li,#recent li{display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-radius:.5rem;cursor:pointer;min-height:2.5rem}
     #results li:hover,#recent li:hover{background:rgba(255,255,255,0.08)}
 
@@ -116,16 +146,16 @@
     </filter>
   </svg>
 
-  <!-- drifting blobs -->
-  <div id="blobs">
-    <div class="blob"></div>
-    <div class="blob"></div>
-    <div class="blob"></div>
-  </div>
-
   <!-- UI -->
   <main>
     <div id="searchWrap">
+      <!-- New container for drifting blobs -->
+      <div id="blobs-container">
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+      </div>
+
       <div id="nowBar" class="glass">
         <button id="toggleBtn" title="Play / Pause">▶</button>
         <span id="now">Choose a station</span>
@@ -175,12 +205,19 @@
 
     function renderRecent(){
       recentUl.innerHTML='';
-      recent.forEach(st => {
+      // Ensure 5 list items are always rendered to maintain height, even if empty
+      for (let i = 0; i < Math.max(5, recent.length); i++) {
         const li=document.createElement('li');
-        li.innerHTML=`<span>${st.name}</span>`;
-        li.onclick = ()=> select(st);
+        li.style.minHeight='2.5rem'; // Ensure consistent height for each row
+        if (recent[i]) {
+          li.innerHTML=`<span>${recent[i].name}</span>`;
+          li.onclick = ()=> select(recent[i]);
+        } else {
+            // Add a non-breaking space for empty rows to maintain height
+            li.innerHTML=`<span>&nbsp;</span>`;
+        }
         recentUl.appendChild(li);
-      });
+      }
     }
 
     /* 4.  live search (no hiding) */
@@ -197,12 +234,16 @@
 
     function render(list){
       resultsUl.innerHTML='';
-      for (let i = 0; i < 10; i++) {
+      // Ensure 5 list items are always rendered to maintain height, even if empty
+      for (let i = 0; i < Math.max(5, list.length); i++) { /* Corrected Math.Max to Math.max */
         const li=document.createElement('li');
         li.style.minHeight='2.5rem';
         if (list[i]) {
           li.innerHTML=`<span>${list[i].name}</span>`;
           li.onclick = ()=> select(list[i]);
+        } else {
+            // Add a non-breaking space for empty rows to maintain height
+            li.innerHTML=`<span>&nbsp;</span>`;
         }
         resultsUl.appendChild(li);
       }
