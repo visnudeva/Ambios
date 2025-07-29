@@ -83,19 +83,20 @@
       display:flex;
       align-items:center;
       gap:.75rem;
+      cursor:pointer; /* Added for clickability */
+      justify-content: center; /* Center content */
+      position: relative;
+      overflow: hidden;
     }
-    #nowBar span{flex:1 1 auto}
-    #fsBtn{
-      width:2.5rem;
-      height:2.5rem;
-      flex-shrink:0;
-      border:none;
-      border-radius:50%;
-      background:rgba(255,255,255,.15);
-      color:var(--clr-text);
-      font-size:1.2rem;
-      cursor:pointer;
+    #nowBar span{
+        flex:1 1 auto;
+        text-align: center; /* Center the text */
+        transition: transform 0.2s ease-out; /* Smooth transition for zoom */
     }
+    #nowBar.zoomed span {
+        transform: scale(0.9); /* Zoom out effect */
+    }
+
 
     #search{width:100%;margin-bottom:.75rem;color:var(--clr-text);outline:none}
 
@@ -125,16 +126,6 @@
       align-items:center;
       gap:.75rem;
     }
-    #toggleBtn{
-      width:2.5rem; /* Matched width of fsBtn */
-      height:2.5rem; /* Matched height of fsBtn */
-      border:none;
-      border-radius:50%;
-      background:rgba(255,255,255,.15); /* Matched background of fsBtn - this should remove any orange */
-      color:var(--clr-text); /* Matched color of fsBtn */
-      font-size:1.2rem; /* Matched font-size of fsBtn */
-      cursor:pointer;
-    }
   </style>
 </head>
 <body>
@@ -158,8 +149,6 @@
 
       <div id="nowBar" class="glass">
         <span id="now">Choose a station</span>
-        <button id="toggleBtn" title="Play / Pause">▶</button>
-        <button id="fsBtn" title="Full screen">⛶</button>
       </div>
 
       <input id="search" class="glass" type="search" placeholder="Type a station name…" autocomplete="off"/>
@@ -188,8 +177,7 @@
     const recentUl  = document.querySelector('#recent ul');
     const player    = document.getElementById('player');
     const nowText   = document.getElementById('now');
-    const toggleBtn = document.getElementById('toggleBtn');
-    const fsBtn     = document.getElementById('fsBtn');
+    const nowBar    = document.getElementById('nowBar'); // Get the nowBar element
 
     /* 3.  recent list (localStorage) */
     const MAX_RECENT = 10;
@@ -253,25 +241,52 @@
     async function select(st){
       const stream = st.url_resolved || st.url;
       player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
-      player.play()
-        .then(()=> {
-          nowText.textContent = `Now playing: ${st.name}`;
-          saveRecent(st);
-        })
-        .catch(e=> nowText.textContent = 'Playback error: ' + e.message);
+      try {
+        await player.play();
+        nowText.textContent = `Now playing: ${st.name}`;
+        saveRecent(st);
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          nowText.textContent = 'Playback aborted (e.g., by user or new selection).';
+        } else if (e.name === 'NotSupportedError') {
+          nowText.textContent = 'Playback error: Media format not supported or network issue.';
+        } else {
+          nowText.textContent = 'Playback error: ' + e.message;
+        }
+        console.error('Playback error:', e);
+      }
     }
 
-    toggleBtn.addEventListener('click', ()=>{
-      if(player.paused){
+    // Play/Pause functionality for nowBar click
+    nowBar.addEventListener('click', () => {
+      if (player.paused) {
         player.play();
-        toggleBtn.textContent = '⏸';
-      }else{
+      } else {
         player.pause();
-        toggleBtn.textContent = '▶';
+      }
+      // Add and remove 'zoomed' class for visual effect
+      nowBar.classList.add('zoomed');
+      setTimeout(() => {
+        nowBar.classList.remove('zoomed');
+      }, 200); // Duration of the zoom-out transition
+    });
+
+    // Keyboard control for play/pause (spacebar)
+    document.addEventListener('keydown', (event) => {
+      if (event.code === 'Space') {
+        event.preventDefault(); // Prevent scrolling the page
+        if (player.paused) {
+          player.play();
+        } else {
+          player.pause();
+        }
+        // Add and remove 'zoomed' class for visual effect
+        nowBar.classList.add('zoomed');
+        setTimeout(() => {
+          nowBar.classList.remove('zoomed');
+        }, 200); // Duration of the zoom-out transition
       }
     });
-    player.addEventListener('pause', () => toggleBtn.textContent='▶');
-    player.addEventListener('play',  () => toggleBtn.textContent='⏸');
 
     /* 6.  beat-sync lava */
     const audioCtx = new (window.AudioContext||webkitAudioContext)();
@@ -300,15 +315,6 @@
       hue = (hue + 0.5) % 360;
       document.documentElement.style.setProperty('--hue', hue);
     }, 50);
-
-    /* 8.  full-screen toggle */
-    fsBtn.addEventListener('click', ()=>{
-      if(!document.fullscreenElement){
-        document.documentElement.requestFullscreen();
-      }else{
-        document.exitFullscreen();
-      }
-    });
 
     /* init */
     renderRecent();
