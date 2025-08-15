@@ -1,264 +1,323 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTMLab by Visnudeva</title>
-    <!-- Use the Inter font from Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Apply the Inter font and dark theme globally */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+  <meta charset="utf-8"/>
+  <title>Ambios</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    :root{
+      --clr-bg:#111;
+      --clr-accent:#20e3b2;
+      --clr-text:#fff;
+      --beat-scale:1;
+      --hue:0;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,Arial}
+    html,body{height:100%;overflow:hidden;background:var(--clr-bg);color:var(--clr-text)}
 
-        /* Hide scrollbars for a cleaner look on the iframes, but allow content to scroll if needed */
-        .project-iframe::-webkit-scrollbar {
-            display: none;
-        }
-        .project-iframe {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
-        }
+    /* ---------- GLIDING BLOBS ---------- */
+    #blobs-container {
+      position: absolute;
+      inset: 0;
+      filter: url(#plasma);
+      z-index: -1;
+    }
+    .blob{
+      position:absolute;
+      border-radius:50%;
+      background:hsl(var(--hue) 100% 60%);
+      transform:scale(var(--beat-scale));
+      transition:transform .05s linear, background .3s linear;
+    }
+    .blob:nth-child(1){width:60vmin;height:60vmin;animation:glide1 120s linear infinite}
+    .blob:nth-child(2){width:40vmin;height:40vmin;animation:glide2 100s linear infinite}
+    .blob:nth-child(3){width:20vmin;height:20vmin;animation:glide3 90s linear infinite}
+    @keyframes glide1{
+      0%{left:-60%;top:10%}
+      50%{left:110%;top:90%}
+      100%{left:-60%;top:10%}
+    }
+    @keyframes glide2{
+      0%{left:110%;top:-40%}
+      50%{left:-40%;top:110%}
+      100%{left:110%;top:-40%}
+    }
+    @keyframes glide3{
+      0%{left:10%;top:110%}
+      50%{left:90%;top:-20%}
+      100%{left:10%;top:110%}
+    }
 
-        /* Base styles for the project card and iframe */
-        .project-card {
-            /* Enable 3D transform acceleration for smooth animations */
-            transform-style: preserve-3d;
-            will-change: transform, box-shadow;
-            transition-property: transform; /* Only transform, as the box-shadow is now dynamic */
-            transition-duration: 300ms;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        }
+    /* ---------- GLASS / RESPONSIVE ---------- */
+    .glass{
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:1rem;
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      padding:.75rem 1rem;
+    }
+    main{
+      position:relative;
+      z-index:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content: center;
+      padding:2rem;
+      height:100%;
+      gap:1rem;
+    }
+    #searchWrap{
+      width:clamp(240px,95vw,1000px);
+      max-width:100%;
+      position:relative;
+      overflow:hidden;
+      border-radius:1rem;
+    }
 
-        .project-iframe {
-            will-change: transform, filter;
-            transition-property: transform, filter;
-            transition-duration: 500ms;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transform: scale(0.9);
-            filter: blur(16px);
-            pointer-events: none; /* Disable interaction until hover */
-        }
+    #nowBar{
+      width:100%;
+      margin-bottom:.75rem;
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+      cursor:pointer;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #nowBar span{
+        flex:1 1 auto;
+        text-align: center;
+        transition: transform 0.2s ease-out;
+    }
+    #nowBar.zoomed span {
+        transform: scale(0.9);
+    }
 
-        /* Hover states for the project card and iframe */
-        .project-card:hover {
-            transform: scale(1.02);
-            /* The box-shadow will now be applied dynamically by JavaScript on hover */
-        }
+    #search{width:100%;margin-bottom:.75rem;color:var(--clr-text);outline:none}
 
-        .project-card:hover .project-iframe {
-            transform: scale(1);
-            filter: blur(0px);
-            pointer-events: auto; /* Enable interaction on hover */
-        }
+    #panes{display:flex;flex-direction:column;width:100%;gap:1rem}
+    #results, #recent{flex:1 1 auto; display:flex;flex-direction:column;}
+    #results ul, #recent ul{
+      list-style:none;
+      margin:0;
+      padding:0;
+      width:100%;
+      overflow-y:auto;
+      min-height:calc(2.5rem * 5 + 0.5rem * 4);
+      max-height:calc(2.5rem * 5 + 0.5rem * 4);
+    }
+    #results li,#recent li{display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-radius:.5rem;cursor:pointer;min-height:2.5rem}
+    #results li:hover,#recent li:hover{background:rgba(255,255,255,0.08)}
 
-        /* Remove the text decoration on links inside project cards for a cleaner look */
-        .project-card a {
-            text-decoration: none;
-        }
+    @media (max-width:600px){
+      #panes{flex-direction:column}
+      #blobs-container {
+        filter: url(#plasma-mobile);
+      }
+      .blob:nth-child(1){width:45vmin;height:45vmin;}
+      .blob:nth-child(2){width:25vmin;height:25vmin;}
+      .blob:nth-child(3){width:10vmin;height:10vmin;}
+    }
 
-        /* Custom CSS for the color cycling title effect */
-        .color-cycle-text {
-            background: linear-gradient(to right, #ef4444, #8b5cf6, #3b82f6, #8b5cf6, #ef4444, #8b5cf6, #3b82f6, #8b5cf6, #ef4444);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: color-cycle 15s linear infinite;
-        }
-
-        @keyframes color-cycle {
-            to {
-                background-position: 100% center;
-            }
-        }
-    </style>
+    #playBar{
+      position:fixed;
+      bottom:1.5rem;
+      left:50%;
+      translate:-50% 0;
+      z-index:10;
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+    }
+  </style>
 </head>
-<body class="bg-gray-950 text-gray-200">
+<body>
+  <!-- SVG goo -->
+  <svg width="0" height="0">
+    <filter id="plasma">
+      <feGaussianBlur stdDeviation="18"/>
+      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
+    </filter>
+    <filter id="plasma-mobile">
+      <feGaussianBlur stdDeviation="8"/>
+      <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 6 -1"/>
+    </filter>
+  </svg>
 
-    <main class="container mx-auto px-4 py-16">
-        <!-- Main title and description section -->
-        <header class="text-center mb-16">
-            <a href="https://github.com/visnudeva/HTMLab" target="_blank" class="block mb-2">
-                <h1 class="text-6xl md:text-7xl font-bold color-cycle-text">
-                    HTMLab
-                </h1>
-            </a>
-            <a href="https://github.com/visnudeva" target="_blank" class="block">
-                <p class="text-xl md:text-2xl text-gray-400 tracking-widest mb-8">
-                    by Visnudeva
-                </p>
-            </a>
-            <div class="overflow-x-auto">
-                <p class="text-lg md:text-xl text-gray-400 mx-auto mt-4 whitespace-nowrap">
-                    A live, interactive showcase experience of my web development projects.
-                </p>
-            </div>
-        </header>
+  <!-- UI -->
+  <main>
+    <div id="searchWrap">
+      <div id="blobs-container">
+        <div class="blob"></div>
+        <div class="blob"></div>
+        <div class="blob"></div>
+      </div>
 
-        <!-- Projects grid section -->
-        <section class="grid grid-cols-1 gap-12">
+      <div id="nowBar" class="glass">
+        <span id="now">Search for a station below</span>
+      </div>
 
-            <!-- Project Card: Laniakea -->
-            <div class="project-card bg-gray-900 rounded-3xl overflow-hidden p-6 relative">
-                <!-- Project title with gradient and link -->
-                <a href="https://github.com/visnudeva/Laniakea" target="_blank">
-                    <h2 class="text-3xl font-bold color-cycle-text mb-2">
-                        Laniakea
-                    </h2>
-                </a>
-                <p class="text-gray-400 mb-4 h-16 overflow-hidden">
-                    A minimalist wallpaper generator inspired by the Laniakea Supercluster.
-                </p>
-                <!-- Iframe container with responsive aspect ratio -->
-                <div class="relative w-full overflow-hidden rounded-xl h-[600px] bg-gray-800">
-                    <iframe 
-                        id="laniakea-iframe"
-                        class="project-iframe absolute top-0 left-0 w-full h-full rounded-xl"
-                        src="https://visnudeva.github.io/Laniakea/" 
-                        frameborder="0" 
-                        allowfullscreen>
-                    </iframe>
-                </div>
-                <!-- Link to live page -->
-                <a href="https://visnudeva.github.io/Laniakea/" target="_blank" class="absolute top-4 right-4 p-2 bg-gray-800 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer">
-                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                </a>
-            </div>
+      <input id="search" class="glass" type="search" placeholder="Type a station name…" autocomplete="off"/>
 
-            <!-- Project Card: Ambios -->
-            <div class="project-card bg-gray-900 rounded-3xl overflow-hidden p-6 relative">
-                <!-- Project title with gradient and link -->
-                <a href="https://github.com/visnudeva/Ambios" target="_blank">
-                    <h2 class="text-3xl font-bold color-cycle-text mb-2">
-                        Ambios
-                    </h2>
-                </a>
-                <p class="text-gray-400 mb-4 h-16 overflow-hidden">
-                    A web radio player with an ambient visualizer .
-                </p>
-                <div class="relative w-full overflow-hidden rounded-xl h-[600px] bg-gray-800">
-                    <iframe 
-                        id="ambios-iframe"
-                        class="project-iframe absolute top-0 left-0 w-full h-full rounded-xl"
-                        src="https://visnudeva.github.io/Ambios/" 
-                        frameborder="0" 
-                        allowfullscreen>
-                    </iframe>
-                </div>
-                <!-- Link to live page -->
-                <a href="https://github.com/visnudeva/Ambios/" target="_blank" class="absolute top-4 right-4 p-2 bg-gray-800 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer">
-                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                </a>
-            </div>
+      <div id="panes">
+        <div id="results" class="glass"><ul></ul></div>
+        <div id="recent" class="glass"><ul></ul></div>
+      </div>
+    </div>
 
-            <!-- Project Card: Holi -->
-            <div class="project-card bg-gray-900 rounded-3xl overflow-hidden p-6 relative">
-                <!-- Project title with gradient and link -->
-                <a href="https://github.com/visnudeva/holi" target="_blank">
-                    <h2 class="text-3xl font-bold color-cycle-text mb-2">
-                        Holi
-                    </h2>
-                </a>
-                <p class="text-gray-400 mb-4 h-16 overflow-hidden">
-                    A colorful web radio player with a visualizer inspired by the festival of colors, Holi.
-                </p>
-                <div class="relative w-full overflow-hidden rounded-xl h-[600px] bg-gray-800">
-                    <iframe 
-                        id="holi-iframe"
-                        class="project-iframe absolute top-0 left-0 w-full h-full rounded-xl"
-                        src="https://visnudeva.github.io/holi/" 
-                        frameborder="0" 
-                        allowfullscreen>
-                    </iframe>
-                </div>
-                <!-- Link to live page -->
-                <a href="https://github.com/visnudeva/holi/" target="_blank" class="absolute top-4 right-4 p-2 bg-gray-800 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer">
-                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                </a>
-            </div>
+    <audio id="player" crossorigin></audio>
+  </main>
 
-            <!-- Project Card: Monomyth Oracle -->
-            <div class="project-card bg-gray-900 rounded-3xl overflow-hidden p-6 relative">
-                <!-- Project title with gradient and link -->
-                <a href="https://github.com/visnudeva/Monomyth-Oracle" target="_blank">
-                    <h2 class="text-3xl font-bold color-cycle-text mb-2">
-                        Monomyth Oracle
-                    </h2>
-                </a>
-                <p class="text-gray-400 mb-4 h-16 overflow-hidden">
-                    An interactive journey into the hero's journey, providing guidance and insights.
-                </p>
-                <div class="relative w-full overflow-hidden rounded-xl h-[600px] bg-gray-800">
-                    <iframe 
-                        id="monomyth-iframe"
-                        class="project-iframe absolute top-0 left-0 w-full h-full rounded-xl"
-                        src="https://visnudeva.github.io/Monomyth-Oracle/" 
-                        frameborder="0" 
-                        allowfullscreen>
-                    </iframe>
-                </div>
-                <!-- Link to live page -->
-                <a href="https://github.com/visnudeva/Monomyth-Oracle/" target="_blank" class="absolute top-4 right-4 p-2 bg-gray-800 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer">
-                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                </a>
-            </div>
-        </section>
+  <script type="module">
+    /* 1.  radio-browser helper */
+    const API = 'https://de1.api.radio-browser.info/json/stations/search';
+    async function searchStations(term, limit = 20){
+      const res = await fetch(`${API}?name=${encodeURIComponent(term)}&limit=${limit}&hidebroken=true`,
+                              {headers:{'User-Agent':'LavaRadio/1.0'}});
+      return res.json();
+    }
 
-    </main>
+    /* 2.  nodes */
+    const searchInp = document.getElementById('search');
+    const resultsUl = document.querySelector('#results ul');
+    const recentUl  = document.querySelector('#recent ul');
+    const player    = document.getElementById('player');
+    const nowText   = document.getElementById('now');
+    const nowBar    = document.getElementById('nowBar');
 
-    <footer class="text-center py-8 text-gray-500">
-        <a href="mailto:visnudeva@pm.me" class="hover:underline">
-            <p>&copy; 2025 Visnudeva</p>
-        </a>
-    </footer>
+    /* 3.  recent list (localStorage) */
+    const MAX_RECENT = 10;
+    let recent = JSON.parse(localStorage.getItem('lava-recent') || '[]');
 
-    <script>
-        // Get all elements with the class 'project-card'
-        const projectCards = document.querySelectorAll('.project-card');
+    function saveRecent(station){
+      recent = recent.filter(s => s.url !== station.url);
+      recent.unshift(station);
+      recent = recent.slice(0, MAX_RECENT);
+      localStorage.setItem('lava-recent', JSON.stringify(recent));
+      renderRecent();
+    }
 
-        /**
-         * Generates a random RGBA color string.
-         * The alpha value is fixed at 0.4 to ensure the shadow is semi-transparent.
-         * @returns {string} The formatted RGBA color string.
-         */
-        function getRandomRgbaColor() {
-            const r = Math.floor(Math.random() * 256);
-            const g = Math.floor(Math.random() * 256);
-            const b = Math.floor(Math.random() * 256);
-            return `rgba(${r}, ${g}, ${b}, 0.4)`;
+    function renderRecent(){
+      recentUl.innerHTML='';
+      for (let i = 0; i < Math.max(5, recent.length); i++) {
+        const li=document.createElement('li');
+        li.style.minHeight='2.5rem';
+        if (recent[i]) {
+          li.innerHTML=`<span>${recent[i].name}</span>`;
+          li.onclick = ()=> select(recent[i]);
+        } else {
+            li.innerHTML=`<span>&nbsp;</span>`;
         }
+        recentUl.appendChild(li);
+      }
+    }
 
-        /**
-         * Updates the box-shadow of a project card on hover.
-         * @param {Event} event The mouse event.
-         */
-        function onMouseEnter(event) {
-            const card = event.currentTarget;
-            const randomColor = getRandomRgbaColor();
-            // Apply a box-shadow with a random color
-            card.style.boxShadow = `0 25px 50px -12px ${randomColor}`;
+    /* 4.  live search */
+    let searchDebounce;
+    searchInp.addEventListener('input', ()=>{
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(async ()=>{
+        const term = searchInp.value.trim();
+        if(term.length<2){ render([]); return; }
+        const stations = await searchStations(term);
+        render(stations);
+      }, 300);
+    });
+
+    function render(list){
+      resultsUl.innerHTML='';
+      for (let i = 0; i < Math.max(5, list.length); i++) {
+        const li=document.createElement('li');
+        li.style.minHeight='2.5rem';
+        if (list[i]) {
+          li.innerHTML=`<span>${list[i].name}</span>`;
+          li.onclick = ()=> select(list[i]);
+        } else {
+            li.innerHTML=`<span>&nbsp;</span>`;
         }
+        resultsUl.appendChild(li);
+      }
+    }
 
-        /**
-         * Removes the box-shadow from a project card when the mouse leaves.
-         * @param {Event} event The mouse event.
-         */
-        function onMouseLeave(event) {
-            const card = event.currentTarget;
-            // Remove the box-shadow to reset the appearance
-            card.style.boxShadow = 'none';
+    /* 5.  station selection & play/pause */
+    async function select(st){
+      const stream = st.url_resolved || st.url;
+      player.src = stream.startsWith('https') ? stream : 'https://stream.srg-ssr.ch/m/drs3/mp3_128';
+      player.dataset.stationName = st.name;          // store for later
+      try {
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        await player.play();
+        nowText.textContent = `Now playing: ${st.name}`;
+        saveRecent(st);
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          nowText.textContent = 'Playback aborted (e.g., by user or new selection).';
+        } else if (e.name === 'NotSupportedError') {
+          nowText.textContent = 'Playback error: Media format not supported or network issue.';
+        } else {
+          nowText.textContent = 'Playback error: ' + e.message;
         }
+        console.error('Playback error:', e);
+      }
+    }
 
-        // Add event listeners to each project card
-        projectCards.forEach(card => {
-            card.addEventListener('mouseenter', onMouseEnter);
-            card.addEventListener('mouseleave', onMouseLeave);
-        });
-    </script>
+    // Play/Pause on nowBar click
+    nowBar.addEventListener('click', () => {
+      if (player.paused) player.play(); else player.pause();
+      nowBar.classList.add('zoomed');
+      setTimeout(() => nowBar.classList.remove('zoomed'), 200);
+    });
+
+    // Spacebar control
+    document.addEventListener('keydown', (event) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (player.paused) player.play(); else player.pause();
+        nowBar.classList.add('zoomed');
+        setTimeout(() => nowBar.classList.remove('zoomed'), 200);
+      }
+    });
+
+    /* 6.  beat-sync lava / audio events */
+    const audioCtx = new (window.AudioContext||webkitAudioContext)();
+    let analyser, dataArray;
+
+    player.addEventListener('pause', () => {
+      nowText.textContent = 'Paused';
+    });
+
+    player.addEventListener('play', ()=>{
+      nowText.textContent = `Now playing: ${player.dataset.stationName || 'Choose a station'}`;
+      if(analyser) return;
+      const src = audioCtx.createMediaElementSource(player);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      beatLoop();
+    });
+    function beatLoop(){
+      analyser.getByteFrequencyData(dataArray);
+      const volume = dataArray.reduce((a,b)=>a+b)/dataArray.length;
+      const scale  = 1 + volume/256;
+      document.documentElement.style.setProperty('--beat-scale', scale.toFixed(3));
+      requestAnimationFrame(beatLoop);
+    }
+
+    /* 7.  color cycle */
+    let hue=0;
+    setInterval(()=>{
+      hue = (hue + 0.5) % 360;
+      document.documentElement.style.setProperty('--hue', hue);
+    }, 50);
+
+    /* init */
+    renderRecent();
+    render([]);
+  </script>
 </body>
 </html>
